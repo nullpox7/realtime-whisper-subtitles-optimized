@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - ????????????</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .main-card { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
+        .subtitle-display { background: #f8f9fa; border-radius: 15px; min-height: 300px; border: 2px dashed #dee2e6; padding: 2rem; }
+        .recording-active { border-color: #dc3545 !important; background: #fff5f5 !important; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .record-btn { border-radius: 50px; padding: 15px 30px; font-weight: 600; }
+        .status-indicator { position: absolute; top: 20px; right: 20px; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; }
+        .status-connected { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-disconnected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .stats-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; }
+        .file-upload-area { border: 2px dashed #6c757d; border-radius: 15px; padding: 3rem 2rem; text-align: center; background: #f8f9fa; }
+        .settings-panel { background: #f8f9fa; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container pt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-4">
+                    <h1 class="text-white mb-3"><i class="fas fa-microphone-alt"></i> ??????????????</h1>
+                    <p class="text-white-50 lead">CUDA 12.9.0 + Whisper ????</p>
+                </div>
+                
+                <div class="card main-card">
+                    <div class="card-body p-4 position-relative">
+                        <div id="status" class="status-indicator status-disconnected">
+                            <i class="fas fa-circle"></i> ?????
+                        </div>
+                        
+                        <div class="settings-panel">
+                            <h5 class="mb-3"><i class="fas fa-cogs"></i> ??</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="languageSelect" class="form-label">??</label>
+                                    <select id="languageSelect" class="form-select">
+                                        <option value="ja">???</option>
+                                        <option value="en">English</option>
+                                        <option value="zh">??</option>
+                                        <option value="ko">???</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="modelSelect" class="form-label">???</label>
+                                    <select id="modelSelect" class="form-select">
+                                        <option value="tiny">Tiny (??)</option>
+                                        <option value="base" selected>Base (??)</option>
+                                        <option value="small">Small (???)</option>
+                                        <option value="medium">Medium (????)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h3 class="mb-3"><i class="fas fa-broadcast-tower"></i> ????????</h3>
+                                <div class="text-center mb-3">
+                                    <button id="recordBtn" class="btn btn-danger record-btn me-3">
+                                        <i class="fas fa-microphone"></i> ????
+                                    </button>
+                                    <button id="clearBtn" class="btn btn-outline-secondary record-btn">
+                                        <i class="fas fa-trash"></i> ???
+                                    </button>
+                                </div>
+                                <div id="subtitleDisplay" class="subtitle-display">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-microphone fa-3x mb-3"></i>
+                                        <p>??????????????????????????</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h3 class="mb-3"><i class="fas fa-file-audio"></i> ??????????</h3>
+                                <div id="fileUploadArea" class="file-upload-area">
+                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                                    <p class="mb-2">???????????&???? ??? ????????</p>
+                                    <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+                                </div>
+                                <div id="fileResults" class="mt-3" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <h5><i class="fas fa-info-circle"></i> ????</h5>
+                                        <div id="fileTranscription"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card stats-card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-clock fa-2x mb-2"></i>
+                                        <h6>????</h6>
+                                        <h4 id="processingTime">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-language fa-2x mb-2"></i>
+                                        <h6>????</h6>
+                                        <h4 id="detectedLang">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-percentage fa-2x mb-2"></i>
+                                        <h6>???</h6>
+                                        <h4 id="confidence">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-tachometer-alt fa-2x mb-2"></i>
+                                        <h6>????????</h6>
+                                        <h4 id="realtimeFactor">-</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <p class="text-white-50">Powered by <strong>OpenAI Whisper</strong> + <strong>NVIDIA CUDA 12.9.0</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
