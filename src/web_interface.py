@@ -32,12 +32,19 @@ import webrtcvad
 from pydub import AudioSegment
 import soundfile as sf
 
+# ???????????????????????? /app/data/logs
+log_dir = os.getenv('LOG_PATH', '/app/data/logs')
+log_file_path = os.path.join(log_dir, 'whisper_app.log')
+
+# ???????????????????
+os.makedirs(log_dir, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/app/logs/whisper_app.log', encoding='utf-8'),
+        logging.FileHandler(log_file_path, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -308,6 +315,8 @@ async def health_check():
         "gpu_available": gpu_available,
         "model_loaded": model_loaded,
         "active_connections": len(manager.active_connections),
+        "log_directory": log_dir,
+        "log_file_exists": os.path.exists(log_file_path),
         "timestamp": time.time()
     })
 
