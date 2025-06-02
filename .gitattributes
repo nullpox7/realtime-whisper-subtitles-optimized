@@ -1,0 +1,155 @@
+# .gitattributes for realtime-whisper-subtitles-optimized
+# UTF-8 encoding and emoji support configuration
+
+# Set default encoding for all text files
+* text=auto eol=lf
+
+# Explicitly set UTF-8 encoding for text files
+*.txt text eol=lf encoding=UTF-8
+*.md text eol=lf encoding=UTF-8
+*.py text eol=lf encoding=UTF-8
+*.js text eol=lf encoding=UTF-8
+*.ts text eol=lf encoding=UTF-8
+*.json text eol=lf encoding=UTF-8
+*.yaml text eol=lf encoding=UTF-8
+*.yml text eol=lf encoding=UTF-8
+*.toml text eol=lf encoding=UTF-8
+*.ini text eol=lf encoding=UTF-8
+*.cfg text eol=lf encoding=UTF-8
+*.conf text eol=lf encoding=UTF-8
+*.xml text eol=lf encoding=UTF-8
+*.html text eol=lf encoding=UTF-8
+*.css text eol=lf encoding=UTF-8
+*.scss text eol=lf encoding=UTF-8
+*.sass text eol=lf encoding=UTF-8
+*.less text eol=lf encoding=UTF-8
+
+# Subtitle and caption files (UTF-8 with emoji support)
+*.srt text eol=lf encoding=UTF-8
+*.vtt text eol=lf encoding=UTF-8
+*.ass text eol=lf encoding=UTF-8
+*.ssa text eol=lf encoding=UTF-8
+*.sub text eol=lf encoding=UTF-8
+*.sbv text eol=lf encoding=UTF-8
+*.ttml text eol=lf encoding=UTF-8
+*.dfxp text eol=lf encoding=UTF-8
+
+# Configuration files
+*.env text eol=lf encoding=UTF-8
+.env* text eol=lf encoding=UTF-8
+*.properties text eol=lf encoding=UTF-8
+requirements*.txt text eol=lf encoding=UTF-8
+Pipfile text eol=lf encoding=UTF-8
+Pipfile.lock text eol=lf encoding=UTF-8
+poetry.lock text eol=lf encoding=UTF-8
+pyproject.toml text eol=lf encoding=UTF-8
+setup.py text eol=lf encoding=UTF-8
+setup.cfg text eol=lf encoding=UTF-8
+tox.ini text eol=lf encoding=UTF-8
+.flake8 text eol=lf encoding=UTF-8
+.pylintrc text eol=lf encoding=UTF-8
+mypy.ini text eol=lf encoding=UTF-8
+
+# Docker files
+Dockerfile* text eol=lf encoding=UTF-8
+docker-compose*.yml text eol=lf encoding=UTF-8
+.dockerignore text eol=lf encoding=UTF-8
+
+# Shell scripts
+*.sh text eol=lf encoding=UTF-8
+*.bash text eol=lf encoding=UTF-8
+*.zsh text eol=lf encoding=UTF-8
+*.fish text eol=lf encoding=UTF-8
+
+# Log files (may contain emojis and international characters)
+*.log text eol=lf encoding=UTF-8
+
+# Documentation files
+README* text eol=lf encoding=UTF-8
+CHANGELOG* text eol=lf encoding=UTF-8
+CONTRIBUTING* text eol=lf encoding=UTF-8
+LICENSE* text eol=lf encoding=UTF-8
+NOTICE* text eol=lf encoding=UTF-8
+AUTHORS* text eol=lf encoding=UTF-8
+
+# Audio files (binary)
+*.wav binary
+*.mp3 binary
+*.flac binary
+*.ogg binary
+*.aac binary
+*.m4a binary
+*.wma binary
+*.aiff binary
+*.au binary
+
+# Video files (binary)
+*.mp4 binary
+*.avi binary
+*.mkv binary
+*.mov binary
+*.wmv binary
+*.flv binary
+*.webm binary
+*.m4v binary
+
+# Model files (binary)
+*.pkl binary
+*.pickle binary
+*.pt binary
+*.pth binary
+*.onnx binary
+*.pb binary
+*.h5 binary
+*.hdf5 binary
+*.bin binary
+*.safetensors binary
+
+# Image files (binary)
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.bmp binary
+*.svg text eol=lf encoding=UTF-8
+*.ico binary
+*.webp binary
+
+# Archive files (binary)
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.tgz binary
+*.tar.bz2 binary
+*.tbz2 binary
+*.tar.xz binary
+*.txz binary
+*.7z binary
+*.rar binary
+
+# IDE and editor files
+.vscode/* text eol=lf encoding=UTF-8
+.idea/* text eol=lf encoding=UTF-8
+*.iml text eol=lf encoding=UTF-8
+
+# Git files
+.gitignore text eol=lf encoding=UTF-8
+.gitattributes text eol=lf encoding=UTF-8
+.gitmodules text eol=lf encoding=UTF-8
+
+# CI/CD files
+.github/* text eol=lf encoding=UTF-8
+.gitlab-ci.yml text eol=lf encoding=UTF-8
+.travis.yml text eol=lf encoding=UTF-8
+.circleci/* text eol=lf encoding=UTF-8
+Jenkinsfile text eol=lf encoding=UTF-8
+
+# Language-specific attributes for diff display
+*.py diff=python
+*.js diff=javascript
+*.ts diff=typescript
+*.html diff=html
+*.css diff=css
+
+# Merge driver for specific files
+*.md merge=union
