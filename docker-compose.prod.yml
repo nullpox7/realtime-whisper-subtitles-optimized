@@ -1,0 +1,82 @@
+# Production environment override for Real-time Whisper Subtitles
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+# Encoding: UTF-8
+
+services:
+  whisper-subtitles:
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - DEVELOPMENT_MODE=false
+      - ENABLE_METRICS=true
+      - ENABLE_CORS=false  # Disable CORS in production
+      - CORS_ORIGINS=https://yourdomain.com
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    command: |
+      sh -c "
+        echo 'Starting in production mode...'
+        python3 -m gunicorn src.web_interface:app \
+          -w 2 \
+          -k uvicorn.workers.UvicornWorker \
+          --bind 0.0.0.0:8000 \
+          --timeout 300 \
+          --keepalive 2 \
+          --max-requests 1000 \
+          --max-requests-jitter 100 \
+          --access-logfile - \
+          --error-logfile -
+      "
+
+  # Production Redis with persistence
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Nginx reverse proxy (enable for production)
+  nginx:
+    profiles:
+      - production
+      - proxy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
