@@ -11,6 +11,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV LOG_PATH=/app/data/logs
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -55,12 +56,13 @@ RUN pip3 install torch torchvision torchaudio --index-url https://download.pytor
 # Install other Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Create necessary directories
+# Create necessary directories (IMPORTANT: includes /app/data/logs)
 RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/static \
     && mkdir -p /app/templates \
     && mkdir -p /app/src \
-    && mkdir -p /app/config
+    && mkdir -p /app/config \
+    && mkdir -p /app/logs
 
 # Copy application files
 COPY src/ ./src/
@@ -77,7 +79,8 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Create data directories with proper permissions
-RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache}
+RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
+    && mkdir -p /app/logs
 
 # Expose port
 EXPOSE 8000
