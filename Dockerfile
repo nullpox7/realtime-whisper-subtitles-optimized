@@ -66,7 +66,9 @@ RUN mkdir -p /app/data/{models,outputs,logs,cache} \
 COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
-COPY .env.example ./
+
+# Copy .env.example if it exists
+COPY .env.example* ./
 
 # Set proper permissions
 RUN chown -R appuser:appuser /app
