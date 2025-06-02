@@ -1,10 +1,10 @@
 # Real-time Whisper Subtitles - Production Dockerfile
-# CUDA 12.9.0 + cuDNN optimized for speech recognition
+# CUDA 12.1 + cuDNN optimized for speech recognition
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
 # Multi-stage build for optimized production image
-FROM nvidia/cuda:12.4-devel-ubuntu22.04 as builder
+FROM nvidia/cuda:12.1-devel-ubuntu22.04 AS builder
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -52,7 +52,6 @@ RUN apt-get update && apt-get install -y \
     libpulse-dev \
     # Additional system tools
     htop \
-    nvidia-utils-535 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Python3.11 as default
@@ -66,7 +65,7 @@ RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Production stage
-FROM nvidia/cuda:12.4-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1-runtime-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
