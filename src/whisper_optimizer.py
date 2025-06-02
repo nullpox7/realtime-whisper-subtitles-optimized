@@ -149,8 +149,8 @@ class OptimizedWhisperModel:
         without_timestamps: bool = False,
         max_initial_timestamp: float = 1.0,
         word_timestamps: bool = False,
-        prepend_punctuations: str = "\"'"?([{-",
-        append_punctuations: str = "\"'.?,?!???:?")]}?",
+        prepend_punctuations: str = "\"'?([{-",
+        append_punctuations: str = "\"'.?,?!?:?)]};",
         vad_filter: bool = True,
         vad_parameters: Optional[Dict] = None
     ) -> Dict:
