@@ -1,0 +1,128 @@
+# Real-time Whisper Subtitles - Docker ignore file
+# Encoding: UTF-8
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+DOCS/
+docs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+.mypy_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+
+# Logs
+logs/
+*.log
+data/logs/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Data directories (will be mounted as volumes)
+data/
+models/
+outputs/
+cache/
+
+# Development files
+.env.local
+.env.development
+node_modules/
+
+# Docker files
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+notebooks/
+
+# Scripts (already in container)
+scripts/
+
+# Configuration examples
+*.example
+config/ssl/
+
+# Monitoring data
+prometheus_data/
+grafana_data/
+
+# Backup files
+*.bak
+*.backup
+
+# Large files
+*.iso
+*.dmg
+*.pkg
+*.deb
+*.rpm
+
+# Audio/video files
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mkv
+*.flac
+*.ogg
+*.m4a
+*.wma
+*.aac
+
+# Model files
+*.bin
+*.pt
+*.pth
+*.onnx
+*.pb
+*.h5
+*.hdf5
+*.safetensors
