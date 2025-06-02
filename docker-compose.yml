@@ -40,6 +40,10 @@ services:
       - LC_ALL=${LC_ALL:-ja_JP.UTF-8}
       - DEVICE=auto
       - COMPUTE_TYPE=auto
+      # Numba cache configuration to fix caching issues
+      - NUMBA_CACHE_DIR=/home/appuser/.numba
+      - NUMBA_DISABLE_JIT=0
+      - NUMBA_THREADING_LAYER=workqueue
     networks:
       - whisper-network
     depends_on:
