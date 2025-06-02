@@ -1,6 +1,6 @@
 /*
- * Real-time Whisper Subtitles - Frontend JavaScript Application
- * CUDA 12.9.0 + cuDNN optimized version
+ * Real-time Whisper Subtitles - Frontend JavaScript Application (Fixed)
+ * CUDA 12.9.0 + cuDNN optimized version - WebSocket audio streaming fixed
  * 
  * Author: Real-time Whisper Subtitles Team
  * License: MIT
@@ -14,6 +14,7 @@ let audioStream = null;
 let isRecording = false;
 let audioContext = null;
 let processor = null;
+let recordingBuffer = [];
 
 // DOM elements
 const recordBtn = document.getElementById('recordBtn');
@@ -26,6 +27,7 @@ const fileUploadArea = document.getElementById('fileUploadArea');
 const audioFileInput = document.getElementById('audioFileInput');
 const fileResults = document.getElementById('fileResults');
 const fileTranscription = document.getElementById('fileTranscription');
+const processingIndicator = document.getElementById('processingIndicator');
 
 // Statistics elements
 const processingTimeEl = document.getElementById('processingTime');
@@ -38,7 +40,8 @@ const CONFIG = {
     SAMPLE_RATE: 16000,
     CHUNK_SIZE: 4096,
     RECONNECT_INTERVAL: 3000,
-    MAX_SUBTITLE_HISTORY: 50
+    MAX_SUBTITLE_HISTORY: 50,
+    AUDIO_BUFFER_SIZE: 8192
 };
 
 /**
@@ -48,41 +51,44 @@ function initWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/realtime`;
     
-    console.log('Connecting to WebSocket:', wsUrl);
+    console.log('WebSocket????:', wsUrl);
     websocket = new WebSocket(wsUrl);
     
     websocket.onopen = function(event) {
-        console.log('WebSocket connected');
+        console.log('WebSocket????');
         updateStatus('connected', '????');
     };
     
     websocket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        handleTranscriptionResult(data);
+        try {
+            const data = JSON.parse(event.data);
+            handleTranscriptionResult(data);
+        } catch (error) {
+            console.error('WebSocket??????????:', error);
+        }
     };
     
     websocket.onclose = function(event) {
-        console.log('WebSocket disconnected');
+        console.log('WebSocket??');
         updateStatus('disconnected', '???????');
         
-        // Auto-reconnect after specified interval
-        setTimeout(() => {
-            if (!isRecording) { // Only reconnect if not currently recording
+        // ?????????????
+        if (!isRecording) {
+            setTimeout(() => {
+                console.log('WebSocket????...');
                 initWebSocket();
-            }
-        }, CONFIG.RECONNECT_INTERVAL);
+            }, CONFIG.RECONNECT_INTERVAL);
+        }
     };
     
     websocket.onerror = function(error) {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket???:', error);
         updateStatus('disconnected', '???');
     };
 }
 
 /**
  * Update status indicator
- * @param {string} status - Status type ('connected' or 'disconnected')
- * @param {string} text - Status text to display
  */
 function updateStatus(status, text) {
     statusIndicator.className = `status-indicator status-${status}`;
@@ -91,23 +97,24 @@ function updateStatus(status, text) {
 
 /**
  * Handle transcription results from WebSocket
- * @param {Object} data - Transcription result data
  */
 function handleTranscriptionResult(data) {
-    console.log('Transcription result:', data);
+    console.log('????:', data);
+    
+    // ??????????????
+    processingIndicator.classList.remove('show');
     
     if (data.success && data.text && data.text.trim()) {
         appendSubtitle(data.text.trim());
         updateStatistics(data);
     } else if (!data.success && data.error) {
-        console.error('Transcription error:', data.error);
-        showNotification('???????: ' + data.error, 'error');
+        console.error('?????:', data.error);
+        showNotification('?????: ' + data.error, 'error');
     }
 }
 
 /**
  * Append subtitle to display area
- * @param {string} text - Subtitle text to append
  */
 function appendSubtitle(text) {
     const now = new Date().toLocaleTimeString('ja-JP');
@@ -118,30 +125,29 @@ function appendSubtitle(text) {
         <span class="subtitle-text">${escapeHtml(text)}</span>
     `;
     
-    // Clear placeholder content if exists
+    // ?????????????????
     if (subtitleDisplay.querySelector('.text-center')) {
         subtitleDisplay.innerHTML = '';
     }
     
     subtitleDisplay.appendChild(subtitleEl);
     
-    // Limit subtitle history
+    // ???????
     const subtitleEntries = subtitleDisplay.querySelectorAll('.subtitle-entry');
     if (subtitleEntries.length > CONFIG.MAX_SUBTITLE_HISTORY) {
         subtitleEntries[0].remove();
     }
     
-    // Auto-scroll to bottom
+    // ???????
     subtitleDisplay.scrollTop = subtitleDisplay.scrollHeight;
 }
 
 /**
  * Update statistics display
- * @param {Object} data - Statistics data
  */
 function updateStatistics(data) {
     if (data.processing_time !== undefined) {
-        processingTimeEl.textContent = `${data.processing_time.toFixed(2)}s`;
+        processingTimeEl.textContent = `${data.processing_time.toFixed(2)}?`;
     }
     
     if (data.language) {
@@ -159,13 +165,13 @@ function updateStatistics(data) {
 }
 
 /**
- * Start audio recording
+ * Start audio recording with improved WebSocket streaming
  */
 async function startRecording() {
     try {
-        console.log('Starting audio recording...');
+        console.log('????????...');
         
-        // Request microphone access
+        // ????????????
         audioStream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
                 sampleRate: CONFIG.SAMPLE_RATE,
@@ -176,43 +182,59 @@ async function startRecording() {
             }
         });
         
-        // Create audio context
+        // AudioContext???
         audioContext = new (window.AudioContext || window.webkitAudioContext)({
             sampleRate: CONFIG.SAMPLE_RATE
         });
         
         const source = audioContext.createMediaStreamSource(audioStream);
-        processor = audioContext.createScriptProcessor(CONFIG.CHUNK_SIZE, 1, 1);
+        
+        // ???????????????
+        processor = audioContext.createScriptProcessor(CONFIG.AUDIO_BUFFER_SIZE, 1, 1);
         
         processor.onaudioprocess = function(event) {
             if (websocket && websocket.readyState === WebSocket.OPEN) {
                 const inputBuffer = event.inputBuffer.getChannelData(0);
-                const samples = new Int16Array(inputBuffer.length);
                 
-                // Convert float32 to int16
+                // float32?int16???
+                const samples = new Int16Array(inputBuffer.length);
                 for (let i = 0; i < inputBuffer.length; i++) {
                     const sample = Math.max(-1, Math.min(1, inputBuffer[i]));
                     samples[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                 }
                 
-                websocket.send(samples.buffer);
+                // ???????
+                recordingBuffer.push(...samples);
+                
+                // ???????????????
+                if (recordingBuffer.length >= CONFIG.SAMPLE_RATE * 2) { // 2??
+                    const audioData = new Int16Array(recordingBuffer);
+                    recordingBuffer = []; // ????????
+                    
+                    // ?????????????
+                    processingIndicator.classList.add('show');
+                    
+                    // WebSocket???
+                    websocket.send(audioData.buffer);
+                }
             }
         };
         
         source.connect(processor);
         processor.connect(audioContext.destination);
         
-        // Update UI state
+        // UI?????
         isRecording = true;
-        recordBtn.innerHTML = '<i class="fas fa-stop"></i> ????';
+        recordBtn.innerHTML = '<i class="fas fa-stop"></i> ??';
         recordBtn.className = 'btn btn-success record-btn me-3';
         subtitleDisplay.classList.add('recording-active');
+        recordingBuffer = []; // ????????
         
-        showNotification('?????????', 'success');
+        showNotification('???????????', 'success');
         
     } catch (error) {
-        console.error('Error starting recording:', error);
-        showNotification('???????????????????????????????????', 'error');
+        console.error('???????:', error);
+        showNotification('?????????????????????????????????', 'error');
     }
 }
 
@@ -220,37 +242,45 @@ async function startRecording() {
  * Stop audio recording
  */
 function stopRecording() {
-    console.log('Stopping audio recording...');
+    console.log('????????...');
     
     try {
-        // Stop all audio streams
+        // ??????????
+        if (recordingBuffer.length > 0 && websocket && websocket.readyState === WebSocket.OPEN) {
+            const audioData = new Int16Array(recordingBuffer);
+            websocket.send(audioData.buffer);
+            recordingBuffer = [];
+        }
+        
+        // ?????????????
         if (audioStream) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
         }
         
-        // Disconnect audio processor
+        // ??????????????
         if (processor) {
             processor.disconnect();
             processor = null;
         }
         
-        // Close audio context
+        // ???????????????
         if (audioContext) {
             audioContext.close();
             audioContext = null;
         }
         
-        // Update UI state
+        // UI?????
         isRecording = false;
-        recordBtn.innerHTML = '<i class="fas fa-microphone"></i> ????';
+        recordBtn.innerHTML = '<i class="fas fa-microphone"></i> ??';
         recordBtn.className = 'btn btn-danger record-btn me-3';
         subtitleDisplay.classList.remove('recording-active');
+        processingIndicator.classList.remove('show');
         
-        showNotification('?????????', 'info');
+        showNotification('???????????', 'info');
         
     } catch (error) {
-        console.error('Error stopping recording:', error);
+        console.error('???????:', error);
     }
 }
 
@@ -261,32 +291,31 @@ function clearSubtitles() {
     subtitleDisplay.innerHTML = `
         <div class="text-center text-muted">
             <i class="fas fa-microphone fa-3x mb-3"></i>
-            <p>??????????????????????????</p>
+            <p>???????????????????????</p>
         </div>
     `;
     
-    // Reset statistics
+    // ???????
     processingTimeEl.textContent = '-';
     detectedLangEl.textContent = '-';
     confidenceEl.textContent = '-';
     realtimeFactorEl.textContent = '-';
     
-    console.log('Subtitles cleared');
+    console.log('??????????');
 }
 
 /**
  * Handle file upload
- * @param {File} file - Audio file to upload
  */
 async function handleFileUpload(file) {
-    console.log('Uploading file:', file.name);
+    console.log('???????????:', file.name);
     
     const formData = new FormData();
     formData.append('audio_file', file);
     formData.append('language', languageSelect.value);
     formData.append('model', modelSelect.value);
     
-    // Show loading state
+    // ???????????
     fileUploadArea.classList.add('processing');
     fileResults.style.display = 'none';
     
@@ -304,11 +333,11 @@ async function handleFileUpload(file) {
         
         if (result.success) {
             fileTranscription.innerHTML = `
-                <p><strong>??????:</strong></p>
+                <p><strong>????:</strong></p>
                 <div class="bg-light p-3 rounded mb-3">${escapeHtml(result.text)}</div>
                 <small class="text-muted">
                     ????: ${result.processing_time?.toFixed(2)}? | 
-                    ????: ${result.language || 'N/A'} | 
+                    ??: ${result.language || 'N/A'} | 
                     ???: ${result.language_probability ? (result.language_probability * 100).toFixed(1) + '%' : 'N/A'}
                 </small>
             `;
@@ -319,7 +348,7 @@ async function handleFileUpload(file) {
         }
         
     } catch (error) {
-        console.error('File upload error:', error);
+        console.error('?????????????:', error);
         showNotification(`?????????: ${error.message}`, 'error');
     } finally {
         fileUploadArea.classList.remove('processing');
@@ -328,8 +357,6 @@ async function handleFileUpload(file) {
 
 /**
  * Show notification message
- * @param {string} message - Notification message
- * @param {string} type - Notification type ('success', 'error', 'info', 'warning')
  */
 function showNotification(message, type = 'info') {
     const alertClass = {
@@ -349,7 +376,7 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Auto-remove after 5 seconds
+    // 5???????
     setTimeout(() => {
         if (notification.parentNode) {
             notification.remove();
@@ -359,8 +386,6 @@ function showNotification(message, type = 'info') {
 
 /**
  * Escape HTML special characters
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
  */
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -375,33 +400,33 @@ async function checkHealth() {
     try {
         const response = await fetch('/health');
         const data = await response.json();
-        console.log('Health check:', data);
+        console.log('???????:', data);
         
         if (!data.gpu_available) {
-            showNotification('GPU ?????????CPU ??????????', 'warning');
+            showNotification('GPU ?????????CPU ????????????', 'warning');
         }
         
         if (!data.model_loaded) {
-            showNotification('Whisper ???????????...', 'info');
+            showNotification('Whisper ?????????...', 'info');
         }
         
     } catch (error) {
-        console.error('Health check failed:', error);
-        showNotification('????????????????', 'error');
+        console.error('?????????:', error);
+        showNotification('???????????????', 'error');
     }
 }
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing Real-time Whisper Subtitles...');
+    console.log('Real-time Whisper Subtitles ?????...');
     
-    // Initialize WebSocket connection
+    // WebSocket??????
     initWebSocket();
     
-    // Check application health
+    // ???????????????
     checkHealth();
     
-    // Record button event
+    // ?????????
     recordBtn.addEventListener('click', function() {
         if (isRecording) {
             stopRecording();
@@ -410,10 +435,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Clear button event
+    // ??????????
     clearBtn.addEventListener('click', clearSubtitles);
     
-    // File upload events
+    // ??????????????
     fileUploadArea.addEventListener('click', () => audioFileInput.click());
     
     fileUploadArea.addEventListener('dragover', (e) => {
@@ -447,19 +472,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Language and model change events
+    // ????????????
     languageSelect.addEventListener('change', () => {
-        console.log('Language changed to:', languageSelect.value);
+        console.log('?????:', languageSelect.value);
     });
     
     modelSelect.addEventListener('change', () => {
-        console.log('Model changed to:', modelSelect.value);
+        console.log('??????:', modelSelect.value);
     });
 });
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', function() {
-    console.log('Page unloading, cleaning up...');
+    console.log('?????????????????...');
     
     if (isRecording) {
         stopRecording();
@@ -473,9 +498,9 @@ window.addEventListener('beforeunload', function() {
 // Handle visibility change (tab switching)
 document.addEventListener('visibilitychange', function() {
     if (document.hidden && isRecording) {
-        console.log('Tab hidden, maintaining recording...');
+        console.log('????????????...');
     } else if (!document.hidden && websocket && websocket.readyState === WebSocket.CLOSED) {
-        console.log('Tab visible, reconnecting WebSocket...');
+        console.log('??????WebSocket???...');
         initWebSocket();
     }
 });
@@ -483,7 +508,7 @@ document.addEventListener('visibilitychange', function() {
 // Handle window focus
 window.addEventListener('focus', function() {
     if (websocket && websocket.readyState === WebSocket.CLOSED) {
-        console.log('Window focused, reconnecting WebSocket...');
+        console.log('???????????WebSocket???...');
         initWebSocket();
     }
 });
@@ -500,4 +525,4 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('Real-time Whisper Subtitles JavaScript loaded successfully');
+console.log('Real-time Whisper Subtitles JavaScript??????');
