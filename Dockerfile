@@ -1,28 +1,19 @@
-# Real-time Whisper Subtitles - Production Dockerfile
-# CUDA optimized for speech recognition
+# Real-time Whisper Subtitles - Universal Dockerfile
+# Works on both GPU and CPU systems
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-# Use Ubuntu base with CUDA runtime
-FROM nvidia/cuda:11.8-runtime-ubuntu22.04
+FROM python:3.11-slim-bullseye
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHON_VERSION=3.11
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# NVIDIA Runtime environment
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
     build-essential \
     curl \
     wget \
@@ -46,12 +37,6 @@ RUN apt-get update && apt-get install -y \
     htop \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for python3 to python
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-# Upgrade pip
-RUN python3 -m pip install --upgrade pip setuptools wheel
-
 # Create app user for security
 RUN groupadd -r appuser && useradd -r -g appuser -s /bin/bash appuser
 
@@ -61,8 +46,11 @@ WORKDIR /app
 # Copy requirements file first for better caching
 COPY requirements.txt .
 
-# Install PyTorch with CUDA support (11.8 compatible)
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# Upgrade pip
+RUN pip3 install --upgrade pip setuptools wheel
+
+# Install PyTorch (will auto-detect GPU if available)
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Install other Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
