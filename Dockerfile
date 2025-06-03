@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - Universal Dockerfile
-# Works on both GPU and CPU systems
+# Real-time Whisper Subtitles - Universal Dockerfile (Fixed)
+# Works on both GPU and CPU systems - Numba cache error fixed
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
@@ -13,10 +13,11 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
-# Numba cache environment variables to fix caching issues
+# Numba cache environment variables - FIXED to disable JIT caching
+ENV NUMBA_DISABLE_JIT=1
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
-ENV NUMBA_DISABLE_JIT=0
 ENV NUMBA_THREADING_LAYER=workqueue
+ENV NUMBA_PARALLEL=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -61,7 +62,7 @@ RUN pip3 install torch torchvision torchaudio --index-url https://download.pytor
 # Install other Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Create necessary directories (IMPORTANT: includes cache directories)
+# Create necessary directories with proper permissions
 RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/static \
     && mkdir -p /app/templates \
@@ -70,7 +71,12 @@ RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/logs \
     && mkdir -p /tmp/numba_cache \
     && mkdir -p /home/appuser/.numba \
-    && mkdir -p /home/appuser/.cache
+    && mkdir -p /home/appuser/.cache \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /home/appuser \
+    && chown -R appuser:appuser /tmp/numba_cache \
+    && chmod -R 755 /tmp/numba_cache \
+    && chmod -R 755 /home/appuser
 
 # Copy application files
 COPY src/ ./src/
@@ -80,23 +86,17 @@ COPY templates/ ./templates/
 # Copy .env.example if it exists
 COPY .env.example* ./
 
-# Set proper permissions
-RUN chown -R appuser:appuser /app \
-    && chown -R appuser:appuser /home/appuser \
-    && chown -R appuser:appuser /tmp/numba_cache \
-    && chmod -R 755 /tmp/numba_cache
+# Set final permissions
+RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
 
-# Create data directories with proper permissions
+# Create user-specific data directories
 RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /app/logs \
     && mkdir -p /home/appuser/.numba \
     && mkdir -p /home/appuser/.cache
-
-# Set numba cache directory for user
-ENV NUMBA_CACHE_DIR=/home/appuser/.numba
 
 # Expose port
 EXPOSE 8000

@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - Complete Dependencies
-# All required packages for full functionality including audio processing
+# Real-time Whisper Subtitles - Fixed Dependencies
+# Numba error fixed with stable versions
 # Encoding: UTF-8
 
 # Web Framework (essential)
@@ -21,9 +21,13 @@ pydub==0.25.1
 webrtcvad==2.0.10
 noisereduce==3.0.0
 
-# Scientific Computing  
+# Scientific Computing - FIXED versions for stability
 numpy>=1.24.0,<2.0.0
 scipy==1.11.4
+
+# Numba and LLVM - FIXED to stable versions to avoid caching errors
+numba==0.57.1
+llvmlite==0.40.1
 
 # Redis client for caching
 redis==5.0.1
@@ -64,8 +68,6 @@ pympler==0.9
 
 # Additional ML/Audio dependencies that may be needed
 resampy==0.4.2
-numba==0.58.1
-llvmlite==0.41.1
 audioread==3.0.1
 pooch>=1.0
 joblib>=1.2.0
