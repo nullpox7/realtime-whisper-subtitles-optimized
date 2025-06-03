@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Audio Processing Module (Fixed)
-Advanced audio preprocessing and optimization utilities with improved error handling
+Real-time Whisper Subtitles - Audio Processing Module (Fixed v2.0.5)
+Advanced audio preprocessing and optimization utilities - WebRTC VAD completely removed
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -16,25 +16,22 @@ import torchaudio
 import librosa
 import soundfile as sf
 from typing import Tuple, Optional, Union
-import webrtcvad
 from scipy import signal
 
 logger = logging.getLogger(__name__)
 
 class AudioProcessor:
-    """Advanced audio processing for optimal Whisper performance with improved error handling"""
+    """Advanced audio processing for optimal Whisper performance - WebRTC VAD removed"""
     
     def __init__(
         self,
         sample_rate: int = 16000,
         chunk_size: int = 1024,
-        vad_mode: int = 3,
         enable_noise_reduction: bool = False,  # Disabled by default to avoid errors
         enable_normalization: bool = True
     ):
         self.sample_rate = sample_rate
         self.chunk_size = chunk_size
-        self.vad = webrtcvad.Vad(vad_mode)
         self.enable_noise_reduction = enable_noise_reduction
         self.enable_normalization = enable_normalization
         
@@ -42,6 +39,10 @@ class AudioProcessor:
         self.hop_length = 512
         self.n_fft = 2048
         self.win_length = 2048
+        
+        # Energy-based speech detection parameters
+        self.speech_threshold = 0.001
+        self.silence_threshold = 0.0001
         
         logger.info(f"AudioProcessor initialized: SR={sample_rate}, Chunk={chunk_size}")
     
@@ -272,43 +273,43 @@ class AudioProcessor:
     
     def detect_speech_activity(
         self,
-        audio_data: bytes,
+        audio_data: Union[bytes, np.ndarray],
         frame_duration: int = 30
     ) -> bool:
         """
-        Detect speech activity using WebRTC VAD with improved error handling
+        Energy-based speech activity detection (WebRTC VAD completely removed)
         
         Args:
-            audio_data: Raw audio bytes (16-bit PCM)
-            frame_duration: Frame duration in milliseconds (10, 20, or 30)
+            audio_data: Raw audio data (bytes or numpy array)
+            frame_duration: Frame duration in milliseconds (legacy parameter, not used)
             
         Returns:
             True if speech is detected
         """
         try:
-            if len(audio_data) == 0:
+            if isinstance(audio_data, bytes):
+                if len(audio_data) == 0:
+                    return False
+                audio_array = self._bytes_to_array(audio_data)
+            else:
+                if len(audio_data) == 0:
+                    return False
+                audio_array = audio_data.copy()
+            
+            if len(audio_array) == 0:
                 return False
             
-            # Ensure sample rate is supported by WebRTC VAD
-            supported_rates = [8000, 16000, 32000, 48000]
-            vad_sample_rate = min(supported_rates, key=lambda x: abs(x - self.sample_rate))
+            # Simple energy-based detection
+            energy = np.mean(audio_array ** 2)
+            is_speech = energy > self.speech_threshold
             
-            # Calculate frame size
-            frame_size = int(vad_sample_rate * frame_duration / 1000) * 2  # 2 bytes per sample
+            logger.debug(f"Energy-based speech detection: energy={energy:.6f}, threshold={self.speech_threshold:.6f}, speech={is_speech}")
             
-            if len(audio_data) < frame_size:
-                return False
-            
-            # Use only the required frame size
-            frame_data = audio_data[:frame_size]
-            
-            # Detect speech
-            is_speech = self.vad.is_speech(frame_data, vad_sample_rate)
             return is_speech
             
         except Exception as e:
-            logger.error(f"VAD error: {e}")
-            return True  # Default to processing if VAD fails
+            logger.error(f"Speech detection error: {e}")
+            return True  # Default to processing if detection fails
     
     def extract_features(self, audio: np.ndarray) -> dict:
         """Extract audio features for analysis with error handling"""
