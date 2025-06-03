@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Whisper Subtitles</title>
+    <title>Real-time Whisper Subtitles - Stream Edition</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -17,30 +17,55 @@
             border-radius: 20px; 
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); 
         }
+        
+        /* ?????????? */
         .subtitle-display { 
-            background: #f8f9fa; 
+            background: #000000; 
             border-radius: 15px; 
-            min-height: 300px; 
-            border: 2px dashed #dee2e6; 
+            min-height: 200px; 
+            border: 2px solid #333; 
             padding: 2rem; 
-            max-height: 400px;
-            overflow-y: auto;
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
         }
-        .recording-active { 
+        
+        .subtitle-display.recording-active { 
             border-color: #dc3545 !important; 
-            background: #fff5f5 !important; 
-            animation: pulse 2s infinite; 
+            animation: pulse-border 2s infinite; 
         }
-        @keyframes pulse { 
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); } 
-            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } 
+        
+        @keyframes pulse-border { 
+            0% { border-color: #dc3545; } 
+            50% { border-color: #ff6b7a; } 
+            100% { border-color: #dc3545; } 
         }
+        
+        .subtitle-text {
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+        
+        .waiting-text {
+            color: #888888;
+            font-size: 1.5rem;
+            font-style: italic;
+        }
+        
         .record-btn { 
             border-radius: 50px; 
             padding: 15px 30px; 
             font-weight: 600; 
+            font-size: 1.1rem;
         }
+        
         .status-indicator { 
             position: absolute; 
             top: 20px; 
@@ -60,67 +85,73 @@
             color: #721c24; 
             border: 1px solid #f5c6cb; 
         }
-        .stats-card { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            border-radius: 15px; 
-        }
-        .file-upload-area { 
-            border: 2px dashed #6c757d; 
-            border-radius: 15px; 
-            padding: 3rem 2rem; 
-            text-align: center; 
-            background: #f8f9fa; 
-            transition: all 0.3s ease;
-        }
-        .file-upload-area:hover {
-            border-color: #007bff;
-            background: #f0f8ff;
-        }
-        .file-upload-area.dragover {
-            border-color: #007bff;
-            background: #e6f3ff;
-        }
-        .file-upload-area.processing {
-            opacity: 0.7;
-            pointer-events: none;
-        }
+        
         .settings-panel { 
             background: #f8f9fa; 
             border-radius: 15px; 
             padding: 1.5rem; 
             margin-bottom: 2rem; 
         }
-        .subtitle-entry {
-            background: white;
+        
+        .stats-panel {
+            background: #f8f9fa; 
+            border-radius: 15px; 
+            padding: 1.5rem; 
+            margin-top: 2rem;
+        }
+        
+        .stats-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            border-radius: 15px; 
+            margin-bottom: 1rem;
+        }
+        
+        .processing-indicator {
+            background: #ffe6e6;
+            border: 1px solid #ffcccc;
             border-radius: 10px;
             padding: 10px 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #007bff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .subtitle-text {
-            font-size: 1.1rem;
-            line-height: 1.5;
-            color: #333;
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .processing-indicator {
-            display: none;
-            text-align: center;
-            padding: 10px;
-            background: #e3f2fd;
-            border-radius: 10px;
             margin: 10px 0;
+            color: #cc0000;
+            font-weight: 600;
+            display: none;
         }
         .processing-indicator.show {
             display: block;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .toggle-stats {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* ??????????? */
+        .fullscreen-subtitle {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000000;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 2rem;
+            z-index: 9999;
+            line-height: 1.3;
         }
     </style>
 </head>
@@ -129,8 +160,8 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="text-center mb-4">
-                    <h1 class="text-white mb-3"><i class="fas fa-microphone-alt"></i> Real-time Whisper Subtitles</h1>
-                    <p class="text-white-50 lead">Powered by OpenAI Whisper + CUDA 12.9.0</p>
+                    <h1 class="text-white mb-3"><i class="fas fa-broadcast-tower"></i> Stream Subtitles</h1>
+                    <p class="text-white-50 lead">Real-time Speech Recognition for Live Streaming</p>
                 </div>
                 
                 <div class="card main-card">
@@ -139,12 +170,24 @@
                             <i class="fas fa-circle"></i> Connecting...
                         </div>
                         
+                        <!-- Settings Panel -->
                         <div class="settings-panel">
                             <h5 class="mb-3"><i class="fas fa-cogs"></i> Settings</h5>
                             <div class="row">
-                                <div class="col-md-6">
-                                    <label for="languageSelect" class="form-label">Language</label>
+                                <div class="col-md-4">
+                                    <label for="microphoneSelect" class="form-label">
+                                        <i class="fas fa-microphone"></i> Microphone Device
+                                    </label>
+                                    <select id="microphoneSelect" class="form-select">
+                                        <option value="">Loading microphones...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="languageSelect" class="form-label">
+                                        <i class="fas fa-language"></i> Language
+                                    </label>
                                     <select id="languageSelect" class="form-select">
+                                        <option value="auto">Auto-detect</option>
                                         <option value="en">English</option>
                                         <option value="ja">Japanese</option>
                                         <option value="zh">Chinese</option>
@@ -154,92 +197,97 @@
                                         <option value="de">German</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="modelSelect" class="form-label">Model</label>
+                                <div class="col-md-4">
+                                    <label for="modelSelect" class="form-label">
+                                        <i class="fas fa-brain"></i> Model
+                                    </label>
                                     <select id="modelSelect" class="form-select">
-                                        <option value="tiny">Tiny (Fast)</option>
+                                        <option value="tiny">Tiny (Fastest)</option>
                                         <option value="base" selected>Base (Balanced)</option>
-                                        <option value="small">Small (Better)</option>
-                                        <option value="medium">Medium (High Quality)</option>
+                                        <option value="small">Small (Better Quality)</option>
+                                        <option value="medium">Medium (Best Quality)</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                         
+                        <!-- Main Subtitle Display -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <h3 class="mb-3"><i class="fas fa-broadcast-tower"></i> Real-time Transcription</h3>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="mb-0"><i class="fas fa-closed-captioning"></i> Live Subtitles</h3>
+                                    <button id="fullscreenBtn" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-expand"></i> Fullscreen
+                                    </button>
+                                </div>
+                                
                                 <div class="text-center mb-3">
                                     <button id="recordBtn" class="btn btn-danger record-btn me-3">
                                         <i class="fas fa-microphone"></i> Start Recording
                                     </button>
                                     <button id="clearBtn" class="btn btn-outline-secondary record-btn">
-                                        <i class="fas fa-trash"></i> Clear
+                                        <i class="fas fa-eraser"></i> Clear
                                     </button>
                                 </div>
+                                
                                 <div class="processing-indicator" id="processingIndicator">
                                     <i class="fas fa-spinner fa-spin"></i> Processing audio...
                                 </div>
+                                
                                 <div id="subtitleDisplay" class="subtitle-display">
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-microphone fa-3x mb-3"></i>
-                                        <p>Click "Start Recording" to begin real-time transcription</p>
+                                    <div class="waiting-text">
+                                        <i class="fas fa-microphone-slash"></i><br>
+                                        Click "Start Recording" to begin live subtitles
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h3 class="mb-3"><i class="fas fa-file-audio"></i> File Upload</h3>
-                                <div id="fileUploadArea" class="file-upload-area">
-                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
-                                    <p class="mb-2">Drag & Drop audio files or click to browse</p>
-                                    <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
-                                </div>
-                                <div id="fileResults" class="mt-3" style="display: none;">
-                                    <div class="alert alert-info">
-                                        <h5><i class="fas fa-info-circle"></i> Transcription Result</h5>
-                                        <div id="fileTranscription"></div>
-                                    </div>
-                                </div>
+                        <!-- Statistics Panel (Collapsible) -->
+                        <div class="stats-panel">
+                            <div class="toggle-stats" onclick="toggleStats()">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar"></i> Statistics 
+                                    <i id="statsToggleIcon" class="fas fa-chevron-down float-end"></i>
+                                </h5>
                             </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="card stats-card h-100">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-clock fa-2x mb-2"></i>
-                                        <h6>Processing Time</h6>
-                                        <h4 id="processingTime">-</h4>
+                            <div id="statsContent" class="mt-3" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="card stats-card">
+                                            <div class="card-body text-center py-3">
+                                                <i class="fas fa-clock fa-lg mb-2"></i>
+                                                <h6 class="mb-1">Processing Time</h6>
+                                                <h5 id="processingTime" class="mb-0">-</h5>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card stats-card h-100">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-language fa-2x mb-2"></i>
-                                        <h6>Detected Language</h6>
-                                        <h4 id="detectedLang">-</h4>
+                                    <div class="col-md-3">
+                                        <div class="card stats-card">
+                                            <div class="card-body text-center py-3">
+                                                <i class="fas fa-language fa-lg mb-2"></i>
+                                                <h6 class="mb-1">Language</h6>
+                                                <h5 id="detectedLang" class="mb-0">-</h5>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card stats-card h-100">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-percentage fa-2x mb-2"></i>
-                                        <h6>Confidence</h6>
-                                        <h4 id="confidence">-</h4>
+                                    <div class="col-md-3">
+                                        <div class="card stats-card">
+                                            <div class="card-body text-center py-3">
+                                                <i class="fas fa-percentage fa-lg mb-2"></i>
+                                                <h6 class="mb-1">Confidence</h6>
+                                                <h5 id="confidence" class="mb-0">-</h5>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card stats-card h-100">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-tachometer-alt fa-2x mb-2"></i>
-                                        <h6>Real-time Factor</h6>
-                                        <h4 id="realtimeFactor">-</h4>
+                                    <div class="col-md-3">
+                                        <div class="card stats-card">
+                                            <div class="card-body text-center py-3">
+                                                <i class="fas fa-tachometer-alt fa-lg mb-2"></i>
+                                                <h6 class="mb-1">Real-time Factor</h6>
+                                                <h5 id="realtimeFactor" class="mb-0">-</h5>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -248,11 +296,37 @@
                 </div>
                 
                 <div class="text-center mt-4">
-                    <p class="text-white-50">Powered by <strong>OpenAI Whisper</strong> + <strong>NVIDIA CUDA 12.9.0</strong></p>
+                    <p class="text-white-50">
+                        Powered by <strong>OpenAI Whisper</strong> + <strong>NVIDIA CUDA</strong>
+                        <span class="mx-2">|</span>
+                        Press <kbd>F</kbd> for fullscreen mode
+                    </p>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Fullscreen Subtitle Display -->
+    <div id="fullscreenSubtitle" class="fullscreen-subtitle" style="display: none;">
+        <div id="fullscreenText" class="subtitle-text">
+            <div class="waiting-text">Ready for live subtitles...</div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleStats() {
+            const content = document.getElementById('statsContent');
+            const icon = document.getElementById('statsToggleIcon');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.className = 'fas fa-chevron-up float-end';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-chevron-down float-end';
+            }
+        }
+    </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="/static/app.js"></script>
