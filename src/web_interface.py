@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Main Web Interface (Fixed)
-CUDA 12.9.0 + cuDNN optimized version - Encoding issues fixed
+Real-time Whisper Subtitles - Main Web Interface (Fixed v2.0.3)
+CUDA 12.9.0 + cuDNN optimized version - Encoding and audio processing issues fixed
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -29,18 +29,17 @@ import torch
 import torchaudio
 import numpy as np
 from faster_whisper import WhisperModel
-import webrtcvad
-from pydub import AudioSegment
+import librosa
 import soundfile as sf
 
-# ??????????? /app/data/logs
+# Log directory configuration - using /app/data/logs
 log_dir = os.getenv('LOG_PATH', '/app/data/logs')
 log_file_path = os.path.join(log_dir, 'whisper_app.log')
 
-# ?????????????????
+# Create log directory if it doesn't exist
 os.makedirs(log_dir, exist_ok=True)
 
-# Configure logging with UTF-8 support
+# Configure logging with UTF-8 support and English messages
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -52,7 +51,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Config:
-    """Application configuration"""
+    """Application configuration with English defaults"""
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", 8000))
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
@@ -61,7 +60,6 @@ class Config:
     COMPUTE_TYPE = "float16" if torch.cuda.is_available() else "int8"
     SAMPLE_RATE = int(os.getenv("SAMPLE_RATE", 16000))
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 1024))
-    VAD_MODE = int(os.getenv("VAD_MODE", 3))
     MODEL_PATH = Path("/app/data/models")
     OUTPUT_PATH = Path("/app/data/outputs")
     STATIC_PATH = Path("/app/static")
@@ -70,7 +68,7 @@ class Config:
 app = FastAPI(
     title="Real-time Whisper Subtitles",
     description="Real-time speech recognition with faster-whisper",
-    version="2.0.1"
+    version="2.0.3"
 )
 
 app.add_middleware(
@@ -85,6 +83,7 @@ app.mount("/static", StaticFiles(directory=str(Config.STATIC_PATH)), name="stati
 templates = Jinja2Templates(directory=str(Config.TEMPLATE_PATH))
 
 class UTF8JSONResponse(JSONResponse):
+    """JSON response with proper UTF-8 encoding"""
     def render(self, content) -> bytes:
         return json.dumps(
             content,
@@ -95,43 +94,40 @@ class UTF8JSONResponse(JSONResponse):
         ).encode("utf-8")
 
 whisper_model: Optional[WhisperModel] = None
-vad = webrtcvad.Vad(Config.VAD_MODE)
 
 class AudioProcessor:
+    """Simplified audio processor without PyDub dependency"""
+    
     @staticmethod
     def preprocess_audio(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> np.ndarray:
+        """Process audio data without PyDub to avoid conversion errors"""
         try:
             if len(audio_data) == 0:
+                logger.warning("Received empty audio data")
                 return np.array([], dtype=np.float32)
             
             try:
-                audio_segment = AudioSegment.from_raw(
-                    audio_data,
-                    sample_width=2,
-                    frame_rate=sample_rate,
-                    channels=1
-                )
-                audio_array = np.array(audio_segment.get_array_of_samples(), dtype=np.float32)
+                # Direct conversion from bytes to numpy array (16-bit PCM)
+                audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
+                # Normalize to [-1, 1] range
                 audio_array = audio_array / 32768.0
                 
                 if len(audio_array) == 0:
+                    logger.warning("Audio array is empty after conversion")
                     return np.array([], dtype=np.float32)
                 
+                # Handle NaN and infinite values
                 audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
+                
+                # Clip to valid range
                 audio_array = np.clip(audio_array, -1.0, 1.0)
+                
+                logger.debug(f"Audio processed successfully: {len(audio_array)} samples")
                 return audio_array
                 
             except Exception as e:
-                logger.error(f"AudioSegment conversion failed: {e}")
-                try:
-                    audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
-                    audio_array = audio_array / 32768.0
-                    audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
-                    audio_array = np.clip(audio_array, -1.0, 1.0)
-                    return audio_array
-                except Exception as e2:
-                    logger.error(f"Fallback audio conversion failed: {e2}")
-                    return np.array([], dtype=np.float32)
+                logger.error(f"Direct audio conversion failed: {e}")
+                return np.array([], dtype=np.float32)
             
         except Exception as e:
             logger.error(f"Audio preprocessing error: {e}")
@@ -139,30 +135,36 @@ class AudioProcessor:
     
     @staticmethod
     def detect_speech(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> bool:
+        """Simple energy-based speech detection (replacing WebRTC VAD)"""
         try:
             if len(audio_data) == 0:
                 return False
             
-            supported_rates = [8000, 16000, 32000, 48000]
-            if sample_rate not in supported_rates:
-                sample_rate = min(supported_rates, key=lambda x: abs(x - sample_rate))
+            # Convert to audio array
+            audio_array = AudioProcessor.preprocess_audio(audio_data, sample_rate)
             
-            frame_duration = 30
-            frame_size = int(sample_rate * frame_duration / 1000) * 2
-            
-            if len(audio_data) < frame_size:
+            if len(audio_array) == 0:
                 return False
             
-            frame_data = audio_data[:frame_size]
-            return vad.is_speech(frame_data, sample_rate)
+            # Simple energy-based detection
+            energy = np.mean(audio_array ** 2)
+            threshold = 0.001  # Adjust as needed
+            
+            is_speech = energy > threshold
+            logger.debug(f"Speech detection: energy={energy:.6f}, threshold={threshold:.6f}, speech={is_speech}")
+            
+            return is_speech
             
         except Exception as e:
-            logger.error(f"VAD error: {e}")
-            return True
+            logger.error(f"Speech detection error: {e}")
+            return True  # Default to processing if detection fails
 
 class WhisperManager:
+    """Whisper model management"""
+    
     @staticmethod
     def load_model(model_name: str = Config.WHISPER_MODEL) -> WhisperModel:
+        """Load Whisper model"""
         try:
             model_path = Config.MODEL_PATH / "whisper" / model_name
             
@@ -191,7 +193,8 @@ class WhisperManager:
             raise
     
     @staticmethod
-    async def transcribe(audio_array: np.ndarray, language: str = "ja") -> Dict:
+    async def transcribe(audio_array: np.ndarray, language: str = "auto") -> Dict:
+        """Transcribe audio using Whisper"""
         try:
             if whisper_model is None:
                 raise ValueError("Whisper model not loaded")
@@ -205,9 +208,12 @@ class WhisperManager:
             
             start_time = time.time()
             
+            # Set language to None for auto-detection if "auto" is specified
+            detect_language = None if language == "auto" else language
+            
             segments, info = whisper_model.transcribe(
                 audio_array,
-                language=language,
+                language=detect_language,
                 beam_size=5,
                 best_of=5,
                 temperature=0.0,
@@ -277,6 +283,8 @@ class WhisperManager:
             }
 
 class ConnectionManager:
+    """WebSocket connection manager"""
+    
     def __init__(self):
         self.active_connections: List[WebSocket] = []
     
@@ -301,6 +309,7 @@ manager = ConnectionManager()
 
 @app.on_event("startup")
 async def startup_event():
+    """Application startup"""
     global whisper_model
     
     logger.info("Starting Real-time Whisper Subtitles...")
@@ -329,10 +338,11 @@ async def startup_event():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    """Main page"""
     try:
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "title": "??????????"
+            "title": "Real-time Whisper Subtitles"
         })
     except Exception as e:
         logger.error(f"Template rendering error: {e}")
@@ -340,6 +350,7 @@ async def index(request: Request):
 
 @app.get("/health")
 async def health_check():
+    """Health check endpoint"""
     gpu_available = torch.cuda.is_available()
     model_loaded = whisper_model is not None
     
@@ -350,15 +361,17 @@ async def health_check():
         "active_connections": len(manager.active_connections),
         "log_directory": log_dir,
         "log_file_exists": os.path.exists(log_file_path),
-        "timestamp": time.time()
+        "timestamp": time.time(),
+        "message": "Real-time Whisper Subtitles is running"
     })
 
 @app.post("/api/transcribe")
 async def transcribe_file(
     audio_file: UploadFile = File(...),
-    language: str = Form("ja"),
+    language: str = Form("auto"),
     model: str = Form(Config.WHISPER_MODEL)
 ):
+    """File transcription endpoint"""
     try:
         if not audio_file.filename:
             raise HTTPException(status_code=400, detail="No file uploaded")
@@ -369,19 +382,22 @@ async def transcribe_file(
             temp_file_path = temp_file.name
         
         try:
+            # Load audio using soundfile/librosa instead of PyDub
             audio_array, sample_rate = sf.read(temp_file_path)
             
+            # Convert to mono if stereo
             if len(audio_array.shape) > 1:
                 audio_array = audio_array.mean(axis=1)
             
+            # Resample if necessary
             if sample_rate != Config.SAMPLE_RATE:
-                import librosa
                 audio_array = librosa.resample(
                     audio_array, 
                     orig_sr=sample_rate, 
                     target_sr=Config.SAMPLE_RATE
                 )
             
+            # Ensure float32 and proper range
             audio_array = audio_array.astype(np.float32)
             audio_array = np.clip(audio_array, -1.0, 1.0)
             
@@ -404,12 +420,14 @@ async def transcribe_file(
 
 @app.websocket("/ws/realtime")
 async def websocket_endpoint(websocket: WebSocket):
+    """Real-time transcription WebSocket endpoint"""
     await manager.connect(websocket)
     
     try:
         while True:
             data = await websocket.receive_bytes()
             
+            # Simple speech detection
             if not AudioProcessor.detect_speech(data):
                 continue
             
@@ -418,6 +436,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if len(audio_array) == 0:
                 continue
             
+            # Skip very short audio
             if len(audio_array) < Config.SAMPLE_RATE * 0.5:
                 continue
             
@@ -432,37 +451,41 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/models")
 async def get_available_models():
+    """Get available Whisper models"""
     models = [
-        {"name": "tiny", "size": "39MB", "speed": "~32x"},
-        {"name": "base", "size": "74MB", "speed": "~16x"},
-        {"name": "small", "size": "244MB", "speed": "~6x"},
-        {"name": "medium", "size": "769MB", "speed": "~2x"},
-        {"name": "large-v2", "size": "1550MB", "speed": "~1x"},
-        {"name": "large-v3", "size": "1550MB", "speed": "~1x"}
+        {"name": "tiny", "size": "39MB", "speed": "~32x", "description": "Fastest, lowest quality"},
+        {"name": "base", "size": "74MB", "speed": "~16x", "description": "Balanced speed and quality"},
+        {"name": "small", "size": "244MB", "speed": "~6x", "description": "Good quality, moderate speed"},
+        {"name": "medium", "size": "769MB", "speed": "~2x", "description": "High quality, slower"},
+        {"name": "large-v2", "size": "1550MB", "speed": "~1x", "description": "Best quality, slowest"},
+        {"name": "large-v3", "size": "1550MB", "speed": "~1x", "description": "Latest, best quality"}
     ]
     
     return UTF8JSONResponse({"models": models})
 
 @app.get("/api/languages")
 async def get_supported_languages():
+    """Get supported languages"""
     languages = [
-        {"code": "ja", "name": "???"},
+        {"code": "auto", "name": "Auto-detect"},
         {"code": "en", "name": "English"},
-        {"code": "zh", "name": "??"},
-        {"code": "ko", "name": "???"},
-        {"code": "es", "name": "Espa?ol"},
-        {"code": "fr", "name": "Fran?ais"},
-        {"code": "de", "name": "Deutsch"},
-        {"code": "it", "name": "Italiano"},
-        {"code": "pt", "name": "Portugu?s"},
-        {"code": "ru", "name": "???????"},
-        {"code": "ar", "name": "???????"},
-        {"code": "hi", "name": "??????"}
+        {"code": "ja", "name": "Japanese"},
+        {"code": "zh", "name": "Chinese"},
+        {"code": "ko", "name": "Korean"},
+        {"code": "es", "name": "Spanish"},
+        {"code": "fr", "name": "French"},
+        {"code": "de", "name": "German"},
+        {"code": "it", "name": "Italian"},
+        {"code": "pt", "name": "Portuguese"},
+        {"code": "ru", "name": "Russian"},
+        {"code": "ar", "name": "Arabic"},
+        {"code": "hi", "name": "Hindi"}
     ]
     
     return UTF8JSONResponse({"languages": languages})
 
 if __name__ == "__main__":
+    # Create necessary directories
     for path in [Config.STATIC_PATH, Config.TEMPLATE_PATH, Config.MODEL_PATH, Config.OUTPUT_PATH]:
         path.mkdir(parents=True, exist_ok=True)
     
