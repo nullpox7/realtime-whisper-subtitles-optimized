@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Optimized Docker Compose
-# NVIDIA CUDA 12.1 + large-v3 model configuration for maximum accuracy
+# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.0)
+# NVIDIA CUDA 12.9 + large-v3 model configuration for maximum accuracy
 # Encoding: UTF-8
 
 services:
-  # Main Whisper Application (GPU Optimized)
+  # Main Whisper Application (GPU Optimized for CUDA 12.9)
   whisper-subtitles-gpu:
     build:
       context: .
@@ -23,15 +23,15 @@ services:
       - HOST=${HOST:-0.0.0.0}
       - PORT=${PORT:-8000}
       - DEBUG=${DEBUG:-false}
-      # High accuracy model configuration
+      # Large-v3 model configuration (maximum accuracy)
       - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
       - LANGUAGE=${LANGUAGE:-auto}
       - SAMPLE_RATE=${SAMPLE_RATE:-16000}
       - CHUNK_SIZE=${CHUNK_SIZE:-1024}
-      # GPU optimization settings
+      # CUDA 12.9 optimization settings
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
-      - BEAM_SIZE=${BEAM_SIZE:-10}
+      - BEAM_SIZE=${BEAM_SIZE:-5}
       - BEST_OF=${BEST_OF:-5}
       - TEMPERATURE=${TEMPERATURE:-0.0}
       - LENGTH_PENALTY=${LENGTH_PENALTY:-1.0}
@@ -42,7 +42,7 @@ services:
       - COMPRESSION_RATIO_THRESHOLD=${COMPRESSION_RATIO_THRESHOLD:-2.4}
       - LOG_PROB_THRESHOLD=${LOG_PROB_THRESHOLD:--1.0}
       - NO_SPEECH_THRESHOLD=${NO_SPEECH_THRESHOLD:-0.6}
-      # Performance optimization
+      # Performance optimization (CUDA 12.9)
       - MAX_WORKERS=${MAX_WORKERS:-4}
       - BATCH_SIZE=${BATCH_SIZE:-16}
       - MODEL_PATH=/app/data/models
@@ -58,12 +58,17 @@ services:
       - TZ=${TZ:-Asia/Tokyo}
       - LANG=${LANG:-en_US.UTF-8}
       - LC_ALL=${LC_ALL:-en_US.UTF-8}
-      # CUDA optimization
+      # CUDA 12.9 optimization
       - CUDA_VISIBLE_DEVICES=all
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_CACHE_PATH=/tmp/cuda_cache
-      - TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
+      - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
+      # Memory optimization (CUDA 12.9)
+      - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.85}
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      - CUDA_MODULE_LOADING=LAZY
+      - TORCH_CUDNN_V8_API_ENABLED=1
       # Numba optimization
       - NUMBA_DISABLE_JIT=0
       - NUMBA_CACHE_DIR=/tmp/numba_cache
@@ -73,7 +78,7 @@ services:
       - whisper-network
     depends_on:
       - redis
-    # GPU configuration for Docker Compose
+    # GPU configuration for Docker Compose (CUDA 12.9)
     deploy:
       resources:
         reservations:
@@ -82,15 +87,15 @@ services:
               count: 1
               capabilities: [gpu]
         limits:
-          memory: 8G
+          memory: 12G
     # Runtime configuration for older Docker versions
     runtime: nvidia
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 15s
+      timeout: 20s
       retries: 5
-      start_period: 120s
+      start_period: 180s
 
   # Redis for caching and session storage (optimized for GPU workload)
   redis:
