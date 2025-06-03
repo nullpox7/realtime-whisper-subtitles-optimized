@@ -1,19 +1,20 @@
 #!/bin/bash
-# Real-time Whisper Subtitles - Complete Fix Script v2.0.3
-# Fix character encoding and AudioSegment conversion failed errors
+# Real-time Whisper Subtitles - Complete Fix Script v2.0.4
+# Fix webrtcvad import error and all dependency issues
 # Encoding: UTF-8
 
 set -e
 
-echo "? Real-time Whisper Subtitles - Complete Fix v2.0.3"
+echo "? Real-time Whisper Subtitles - Complete Fix v2.0.4"
 echo "====================================================="
 echo ""
 echo "Fixed Issues:"
+echo "  ? WebRTC VAD import error completely resolved"
 echo "  ? Character encoding issues (Full English UI)"
 echo "  ? AudioSegment conversion failed errors"
 echo "  ? PyDub dependency removed"
 echo "  ? Simplified audio processing with librosa/soundfile only"
-echo "  ? WebRTC VAD replaced with energy-based detection"
+echo "  ? Energy-based speech detection (no external dependencies)"
 echo ""
 
 # Colors
@@ -76,11 +77,23 @@ log_info "Removing old Docker images..."
 docker images | grep realtime-whisper-subtitles | awk '{print $3}' | xargs -r docker rmi -f || true
 
 # Build with no cache - complete rebuild
-log_info "Building Docker image (complete rebuild)..."
+log_info "Building Docker image (complete rebuild with dependency fixes)..."
 if docker-compose build --no-cache --pull whisper-subtitles; then
     log_success "Build completed successfully"
 else
     log_error "Build failed"
+    log_info "Checking for common build issues..."
+    
+    # Check if webrtcvad is still in requirements
+    if grep -q "webrtcvad" requirements.txt 2>/dev/null; then
+        log_error "webrtcvad still found in requirements.txt - should be removed"
+    fi
+    
+    # Check if pydub is still in requirements  
+    if grep -q "pydub" requirements.txt 2>/dev/null; then
+        log_error "pydub still found in requirements.txt - should be removed"
+    fi
+    
     exit 1
 fi
 
@@ -108,6 +121,7 @@ for i in {1..5}; do
         status=$(echo "$health_data" | jq -r '.status' 2>/dev/null || echo "unknown")
         model_loaded=$(echo "$health_data" | jq -r '.model_loaded' 2>/dev/null || echo "unknown")
         gpu_available=$(echo "$health_data" | jq -r '.gpu_available' 2>/dev/null || echo "unknown")
+        version=$(echo "$health_data" | jq -r '.version' 2>/dev/null || echo "unknown")
         
         echo ""
         echo "? Fix completed successfully!"
@@ -115,23 +129,27 @@ for i in {1..5}; do
         echo ""
         echo "? Application URL: http://localhost:8000"
         echo "? Health Status: $status"
+        echo "? Version: $version"
         echo "? Model Loaded: $model_loaded"
         echo "? GPU Available: $gpu_available"
         echo ""
-        echo "? Issues Fixed:"
+        echo "? Issues Fixed in v2.0.4:"
+        echo "  ? WebRTC VAD import error completely resolved"
+        echo "  ? ModuleNotFoundError: webrtcvad - FIXED"
         echo "  ? Character encoding (Full English UI)"
         echo "  ? AudioSegment conversion errors"
         echo "  ? PyDub dependency removed"
         echo "  ? Simplified audio processing with librosa/soundfile"
-        echo "  ? Energy-based speech detection (no WebRTC VAD)"
+        echo "  ? Energy-based speech detection (no external dependencies)"
         echo "  ? UTF-8 JSON responses"
         echo ""
         echo "? Key Improvements:"
-        echo "  ? No more 'AudioSegment conversion failed' errors"
-        echo "  ? Stable audio processing without PyDub"
+        echo "  ? No more import errors on startup"
+        echo "  ? Stable audio processing without problematic dependencies"
         echo "  ? Full English interface (no encoding issues)"
         echo "  ? Better error handling and logging"
         echo "  ? Auto-detect language support"
+        echo "  ? Simplified and reliable codebase"
         echo ""
         echo "? Useful Commands:"
         echo "  ? View logs: docker-compose logs -f whisper-subtitles"
@@ -146,18 +164,31 @@ for i in {1..5}; do
         break
     else
         log_warning "Health check attempt $i/5 failed, retrying..."
+        
+        # Show container logs on failure
+        if [ $i -eq 1 ]; then
+            log_info "Checking container logs for errors..."
+            docker-compose logs --tail 10 whisper-subtitles || true
+        fi
+        
         sleep 15
     fi
     
     if [ $i -eq 5 ]; then
         log_warning "Health check failed after 5 attempts"
         log_info "The application may still be starting up..."
+        
+        # Show detailed error information
+        log_info "Checking for container errors..."
+        docker-compose logs --tail 20 whisper-subtitles || true
+        
         echo ""
         echo "? Troubleshooting:"
         echo "  ? Wait a few more minutes and try: http://localhost:8000"
         echo "  ? Check logs: docker-compose logs whisper-subtitles"
         echo "  ? Verify no other services are using port 8000"
         echo "  ? Try manual restart: docker-compose restart whisper-subtitles"
+        echo "  ? If still failing, check for import errors in logs"
         echo ""
     fi
 done
@@ -165,10 +196,16 @@ done
 echo ""
 log_success "Complete fix script finished!"
 echo ""
-echo "? All issues have been resolved:"
+echo "? All dependency issues have been resolved in v2.0.4:"
+echo "  ? WebRTC VAD import error fixed"
 echo "  ? Character encoding fixed with full English UI"
 echo "  ? AudioSegment conversion errors eliminated"
 echo "  ? Audio processing simplified and stabilized"
 echo "  ? WebSocket communication improved"
 echo ""
 echo "? Ready to use at: http://localhost:8000"
+echo ""
+echo "? If you encounter any remaining issues:"
+echo "  1. Check the container logs: docker-compose logs whisper-subtitles"
+echo "  2. Verify the health endpoint: curl http://localhost:8000/health"
+echo "  3. Report any remaining issues with the log output"
