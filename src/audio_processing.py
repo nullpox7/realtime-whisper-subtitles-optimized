@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Audio Processing Module
-Advanced audio preprocessing and optimization utilities
+Real-time Whisper Subtitles - Audio Processing Module (Fixed)
+Advanced audio preprocessing and optimization utilities with improved error handling
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -18,19 +18,18 @@ import soundfile as sf
 from typing import Tuple, Optional, Union
 import webrtcvad
 from scipy import signal
-import noisereduce as nr
 
 logger = logging.getLogger(__name__)
 
 class AudioProcessor:
-    """Advanced audio processing for optimal Whisper performance"""
+    """Advanced audio processing for optimal Whisper performance with improved error handling"""
     
     def __init__(
         self,
         sample_rate: int = 16000,
         chunk_size: int = 1024,
         vad_mode: int = 3,
-        enable_noise_reduction: bool = True,
+        enable_noise_reduction: bool = False,  # Disabled by default to avoid errors
         enable_normalization: bool = True
     ):
         self.sample_rate = sample_rate
@@ -52,7 +51,7 @@ class AudioProcessor:
         source_sample_rate: Optional[int] = None
     ) -> np.ndarray:
         """
-        Comprehensive audio preprocessing for Whisper
+        Comprehensive audio preprocessing for Whisper with robust error handling
         
         Args:
             audio_data: Raw audio data (numpy array or bytes)
@@ -62,46 +61,93 @@ class AudioProcessor:
             Preprocessed audio array normalized for Whisper
         """
         try:
+            # Handle empty input
+            if audio_data is None:
+                logger.warning("Received None audio data")
+                return np.array([], dtype=np.float32)
+            
             # Convert bytes to numpy array if necessary
             if isinstance(audio_data, bytes):
+                if len(audio_data) == 0:
+                    logger.warning("Received empty audio bytes")
+                    return np.array([], dtype=np.float32)
                 audio_array = self._bytes_to_array(audio_data)
             else:
+                if len(audio_data) == 0:
+                    logger.warning("Received empty audio array")
+                    return np.array([], dtype=np.float32)
                 audio_array = audio_data.copy()
             
-            # Ensure float32 format
-            if audio_array.dtype != np.float32:
-                if audio_array.dtype == np.int16:
-                    audio_array = audio_array.astype(np.float32) / 32768.0
-                elif audio_array.dtype == np.int32:
-                    audio_array = audio_array.astype(np.float32) / 2147483648.0
-                else:
-                    audio_array = audio_array.astype(np.float32)
+            # Validate audio array
+            if audio_array is None or len(audio_array) == 0:
+                logger.warning("Audio array is empty after conversion")
+                return np.array([], dtype=np.float32)
+            
+            # Ensure float32 format with proper error handling
+            try:
+                if audio_array.dtype != np.float32:
+                    if audio_array.dtype == np.int16:
+                        audio_array = audio_array.astype(np.float32) / 32768.0
+                    elif audio_array.dtype == np.int32:
+                        audio_array = audio_array.astype(np.float32) / 2147483648.0
+                    else:
+                        audio_array = audio_array.astype(np.float32)
+            except Exception as e:
+                logger.error(f"Data type conversion failed: {e}")
+                return np.array([], dtype=np.float32)
+            
+            # Handle NaN and infinite values
+            if np.any(np.isnan(audio_array)) or np.any(np.isinf(audio_array)):
+                logger.warning("Found NaN or infinite values in audio, cleaning...")
+                audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
             
             # Convert to mono if stereo
             if len(audio_array.shape) > 1:
                 audio_array = np.mean(audio_array, axis=1)
             
+            # Ensure audio is 1D
+            if len(audio_array.shape) != 1:
+                logger.error(f"Unexpected audio shape: {audio_array.shape}")
+                return np.array([], dtype=np.float32)
+            
             # Resample if necessary
             if source_sample_rate and source_sample_rate != self.sample_rate:
-                audio_array = librosa.resample(
-                    audio_array,
-                    orig_sr=source_sample_rate,
-                    target_sr=self.sample_rate,
-                    res_type='kaiser_best'
-                )
+                try:
+                    audio_array = librosa.resample(
+                        audio_array,
+                        orig_sr=source_sample_rate,
+                        target_sr=self.sample_rate,
+                        res_type='kaiser_best'
+                    )
+                except Exception as e:
+                    logger.error(f"Resampling failed: {e}")
+                    # Continue with original audio if resampling fails
             
-            # Apply preprocessing pipeline
-            if self.enable_noise_reduction:
-                audio_array = self._reduce_noise(audio_array)
+            # Apply preprocessing pipeline with individual error handling
+            try:
+                if self.enable_noise_reduction:
+                    audio_array = self._reduce_noise_safe(audio_array)
+            except Exception as e:
+                logger.warning(f"Noise reduction step failed: {e}")
             
-            if self.enable_normalization:
-                audio_array = self._normalize_audio(audio_array)
+            try:
+                if self.enable_normalization:
+                    audio_array = self._normalize_audio(audio_array)
+            except Exception as e:
+                logger.warning(f"Normalization step failed: {e}")
             
-            # Apply bandpass filter for speech frequencies
-            audio_array = self._apply_speech_filter(audio_array)
+            try:
+                audio_array = self._apply_speech_filter(audio_array)
+            except Exception as e:
+                logger.warning(f"Speech filter step failed: {e}")
             
-            # Remove silence from beginning and end
-            audio_array = self._trim_silence(audio_array)
+            try:
+                audio_array = self._trim_silence(audio_array)
+            except Exception as e:
+                logger.warning(f"Silence trimming step failed: {e}")
+            
+            # Final validation and clipping
+            audio_array = np.clip(audio_array, -1.0, 1.0)
             
             return audio_array
             
@@ -110,7 +156,7 @@ class AudioProcessor:
             return np.array([], dtype=np.float32)
     
     def _bytes_to_array(self, audio_bytes: bytes) -> np.ndarray:
-        """Convert byte data to numpy array"""
+        """Convert byte data to numpy array with robust error handling"""
         try:
             # Assume 16-bit PCM
             audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
@@ -119,30 +165,34 @@ class AudioProcessor:
             logger.error(f"Bytes to array conversion error: {e}")
             return np.array([], dtype=np.float32)
     
-    def _reduce_noise(self, audio: np.ndarray) -> np.ndarray:
-        """Apply noise reduction using spectral gating"""
+    def _reduce_noise_safe(self, audio: np.ndarray) -> np.ndarray:
+        """Apply noise reduction with safe fallback - noisereduce disabled to avoid errors"""
         try:
             if len(audio) < self.sample_rate:  # Skip if too short
                 return audio
-                
-            # Use noisereduce library for spectral gating
-            reduced_audio = nr.reduce_noise(
-                y=audio,
-                sr=self.sample_rate,
-                stationary=False,
-                prop_decrease=0.8
-            )
-            return reduced_audio
+            
+            # Simple noise gate instead of noisereduce to avoid dependency issues
+            # Calculate RMS
+            rms = np.sqrt(np.mean(audio ** 2))
+            threshold = rms * 0.1  # Simple noise gate threshold
+            
+            # Apply noise gate
+            audio_gated = np.where(np.abs(audio) > threshold, audio, audio * 0.1)
+            return audio_gated
+            
         except Exception as e:
-            logger.warning(f"Noise reduction failed: {e}")
+            logger.warning(f"Safe noise reduction failed: {e}")
             return audio
     
     def _normalize_audio(self, audio: np.ndarray) -> np.ndarray:
-        """Normalize audio amplitude"""
+        """Normalize audio amplitude with robust error handling"""
         try:
+            if len(audio) == 0:
+                return audio
+            
             # RMS normalization
             rms = np.sqrt(np.mean(audio ** 2))
-            if rms > 0:
+            if rms > 1e-8:  # Avoid division by very small numbers
                 target_rms = 0.2  # Target RMS level
                 audio = audio * (target_rms / rms)
             
@@ -157,7 +207,7 @@ class AudioProcessor:
             return audio
     
     def _apply_speech_filter(self, audio: np.ndarray) -> np.ndarray:
-        """Apply bandpass filter for speech frequencies (80Hz - 8kHz)"""
+        """Apply bandpass filter for speech frequencies (80Hz - 8kHz) with error handling"""
         try:
             if len(audio) < 100:  # Skip if too short
                 return audio
@@ -165,6 +215,11 @@ class AudioProcessor:
             # Design Butterworth bandpass filter
             low_freq = 80.0
             high_freq = min(8000.0, self.sample_rate / 2 - 100)
+            
+            # Ensure frequencies are valid
+            if low_freq >= high_freq:
+                logger.warning("Invalid filter frequencies, skipping filter")
+                return audio
             
             sos = signal.butter(
                 4,
@@ -176,6 +231,12 @@ class AudioProcessor:
             
             # Apply filter
             filtered_audio = signal.sosfilt(sos, audio)
+            
+            # Handle potential NaN values from filtering
+            if np.any(np.isnan(filtered_audio)):
+                logger.warning("Filter produced NaN values, using original audio")
+                return audio
+            
             return filtered_audio
             
         except Exception as e:
@@ -183,7 +244,7 @@ class AudioProcessor:
             return audio
     
     def _trim_silence(self, audio: np.ndarray, threshold: float = 0.01) -> np.ndarray:
-        """Remove silence from beginning and end"""
+        """Remove silence from beginning and end with robust error handling"""
         try:
             if len(audio) < 100:
                 return audio
@@ -215,7 +276,7 @@ class AudioProcessor:
         frame_duration: int = 30
     ) -> bool:
         """
-        Detect speech activity using WebRTC VAD
+        Detect speech activity using WebRTC VAD with improved error handling
         
         Args:
             audio_data: Raw audio bytes (16-bit PCM)
@@ -250,39 +311,48 @@ class AudioProcessor:
             return True  # Default to processing if VAD fails
     
     def extract_features(self, audio: np.ndarray) -> dict:
-        """Extract audio features for analysis"""
+        """Extract audio features for analysis with error handling"""
         try:
+            if len(audio) == 0:
+                return {}
+            
             features = {}
             
             # Basic statistics
-            features['rms'] = np.sqrt(np.mean(audio ** 2))
-            features['peak'] = np.max(np.abs(audio))
-            features['zero_crossing_rate'] = np.mean(librosa.feature.zero_crossing_rate(audio))
+            features['rms'] = float(np.sqrt(np.mean(audio ** 2)))
+            features['peak'] = float(np.max(np.abs(audio)))
+            features['zero_crossing_rate'] = float(np.mean(librosa.feature.zero_crossing_rate(audio)))
             
-            # Spectral features
-            stft = librosa.stft(audio, hop_length=self.hop_length, n_fft=self.n_fft)
-            magnitude = np.abs(stft)
+            # Spectral features (with error handling)
+            try:
+                stft = librosa.stft(audio, hop_length=self.hop_length, n_fft=self.n_fft)
+                magnitude = np.abs(stft)
+                
+                features['spectral_centroid'] = float(np.mean(librosa.feature.spectral_centroid(
+                    S=magnitude, sr=self.sample_rate
+                )))
+                features['spectral_bandwidth'] = float(np.mean(librosa.feature.spectral_bandwidth(
+                    S=magnitude, sr=self.sample_rate
+                )))
+                features['spectral_rolloff'] = float(np.mean(librosa.feature.spectral_rolloff(
+                    S=magnitude, sr=self.sample_rate
+                )))
+            except Exception as e:
+                logger.warning(f"Spectral features extraction failed: {e}")
             
-            features['spectral_centroid'] = np.mean(librosa.feature.spectral_centroid(
-                S=magnitude, sr=self.sample_rate
-            ))
-            features['spectral_bandwidth'] = np.mean(librosa.feature.spectral_bandwidth(
-                S=magnitude, sr=self.sample_rate
-            ))
-            features['spectral_rolloff'] = np.mean(librosa.feature.spectral_rolloff(
-                S=magnitude, sr=self.sample_rate
-            ))
-            
-            # MFCC features
-            mfccs = librosa.feature.mfcc(
-                y=audio,
-                sr=self.sample_rate,
-                n_mfcc=13,
-                hop_length=self.hop_length,
-                n_fft=self.n_fft
-            )
-            features['mfcc_mean'] = np.mean(mfccs, axis=1)
-            features['mfcc_std'] = np.std(mfccs, axis=1)
+            # MFCC features (with error handling)
+            try:
+                mfccs = librosa.feature.mfcc(
+                    y=audio,
+                    sr=self.sample_rate,
+                    n_mfcc=13,
+                    hop_length=self.hop_length,
+                    n_fft=self.n_fft
+                )
+                features['mfcc_mean'] = np.mean(mfccs, axis=1).tolist()
+                features['mfcc_std'] = np.std(mfccs, axis=1).tolist()
+            except Exception as e:
+                logger.warning(f"MFCC features extraction failed: {e}")
             
             return features
             
@@ -297,9 +367,12 @@ class AudioProcessor:
         target_sr: int,
         method: str = 'kaiser_best'
     ) -> np.ndarray:
-        """High-quality audio resampling"""
+        """High-quality audio resampling with error handling"""
         try:
             if source_sr == target_sr:
+                return audio
+            
+            if len(audio) == 0:
                 return audio
             
             resampled = librosa.resample(
@@ -320,8 +393,12 @@ class AudioProcessor:
         filepath: str,
         sample_rate: Optional[int] = None
     ) -> bool:
-        """Save audio to file"""
+        """Save audio to file with error handling"""
         try:
+            if len(audio) == 0:
+                logger.warning("Cannot save empty audio array")
+                return False
+            
             sr = sample_rate or self.sample_rate
             sf.write(filepath, audio, sr)
             logger.info(f"Audio saved to {filepath}")
@@ -331,7 +408,7 @@ class AudioProcessor:
             return False
 
 class StreamingAudioProcessor:
-    """Streaming audio processor for real-time applications"""
+    """Streaming audio processor for real-time applications with improved error handling"""
     
     def __init__(
         self,
@@ -343,11 +420,18 @@ class StreamingAudioProcessor:
         self.chunk_size = chunk_size
         self.overlap_size = int(chunk_size * overlap)
         self.buffer = np.array([], dtype=np.float32)
-        self.processor = AudioProcessor(sample_rate, chunk_size)
+        self.processor = AudioProcessor(sample_rate, chunk_size, enable_noise_reduction=False)
         
     def process_chunk(self, audio_chunk: np.ndarray) -> Optional[np.ndarray]:
-        """Process audio chunk with overlap handling"""
+        """Process audio chunk with overlap handling and error handling"""
         try:
+            if audio_chunk is None or len(audio_chunk) == 0:
+                return None
+            
+            # Ensure audio_chunk is the right type
+            if not isinstance(audio_chunk, np.ndarray):
+                audio_chunk = np.array(audio_chunk, dtype=np.float32)
+            
             # Add chunk to buffer
             self.buffer = np.concatenate([self.buffer, audio_chunk])
             
