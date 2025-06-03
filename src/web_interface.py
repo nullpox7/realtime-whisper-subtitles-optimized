@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Main Web Interface (Fixed v2.0.3)
-CUDA 12.9.0 + cuDNN optimized version - Encoding and audio processing issues fixed
+Real-time Whisper Subtitles - Main Web Interface (Fixed v2.0.4)
+CUDA 12.9.0 + cuDNN optimized version - WebRTC VAD dependency completely removed
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -68,7 +68,7 @@ class Config:
 app = FastAPI(
     title="Real-time Whisper Subtitles",
     description="Real-time speech recognition with faster-whisper",
-    version="2.0.3"
+    version="2.0.4"
 )
 
 app.add_middleware(
@@ -96,11 +96,11 @@ class UTF8JSONResponse(JSONResponse):
 whisper_model: Optional[WhisperModel] = None
 
 class AudioProcessor:
-    """Simplified audio processor without PyDub dependency"""
+    """Simplified audio processor without any external dependencies"""
     
     @staticmethod
     def preprocess_audio(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> np.ndarray:
-        """Process audio data without PyDub to avoid conversion errors"""
+        """Process audio data without any external dependencies"""
         try:
             if len(audio_data) == 0:
                 logger.warning("Received empty audio data")
@@ -135,7 +135,7 @@ class AudioProcessor:
     
     @staticmethod
     def detect_speech(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> bool:
-        """Simple energy-based speech detection (replacing WebRTC VAD)"""
+        """Simple energy-based speech detection (WebRTC VAD completely removed)"""
         try:
             if len(audio_data) == 0:
                 return False
@@ -312,7 +312,7 @@ async def startup_event():
     """Application startup"""
     global whisper_model
     
-    logger.info("Starting Real-time Whisper Subtitles...")
+    logger.info("Starting Real-time Whisper Subtitles v2.0.4...")
     
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
@@ -356,13 +356,21 @@ async def health_check():
     
     return UTF8JSONResponse({
         "status": "healthy" if model_loaded else "loading",
+        "version": "2.0.4",
         "gpu_available": gpu_available,
         "model_loaded": model_loaded,
         "active_connections": len(manager.active_connections),
         "log_directory": log_dir,
         "log_file_exists": os.path.exists(log_file_path),
         "timestamp": time.time(),
-        "message": "Real-time Whisper Subtitles is running"
+        "message": "Real-time Whisper Subtitles is running (WebRTC VAD removed)",
+        "fixes_applied": [
+            "WebRTC VAD dependency removed",
+            "PyDub dependency removed", 
+            "Energy-based speech detection",
+            "Full English UI",
+            "UTF-8 encoding fixed"
+        ]
     })
 
 @app.post("/api/transcribe")
