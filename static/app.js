@@ -1,6 +1,6 @@
 /*
- * Real-time Whisper Subtitles - Frontend JavaScript Application (Fixed)
- * CUDA 12.9.0 + cuDNN optimized version - Audio processing fixes
+ * Real-time Whisper Subtitles - Stream Edition JavaScript
+ * Optimized for live streaming with microphone device selection
  * 
  * Author: Real-time Whisper Subtitles Team
  * License: MIT
@@ -15,18 +15,22 @@ let isRecording = false;
 let audioContext = null;
 let processor = null;
 let recordingBuffer = [];
+let availableMicrophones = [];
+let selectedMicrophoneId = null;
+let currentSubtitleText = '';
+let isFullscreen = false;
 
 // DOM elements
 const recordBtn = document.getElementById('recordBtn');
 const clearBtn = document.getElementById('clearBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
 const subtitleDisplay = document.getElementById('subtitleDisplay');
+const fullscreenSubtitle = document.getElementById('fullscreenSubtitle');
+const fullscreenText = document.getElementById('fullscreenText');
 const statusIndicator = document.getElementById('status');
+const microphoneSelect = document.getElementById('microphoneSelect');
 const languageSelect = document.getElementById('languageSelect');
 const modelSelect = document.getElementById('modelSelect');
-const fileUploadArea = document.getElementById('fileUploadArea');
-const audioFileInput = document.getElementById('audioFileInput');
-const fileResults = document.getElementById('fileResults');
-const fileTranscription = document.getElementById('fileTranscription');
 const processingIndicator = document.getElementById('processingIndicator');
 
 // Statistics elements
@@ -40,9 +44,68 @@ const CONFIG = {
     SAMPLE_RATE: 16000,
     CHUNK_SIZE: 4096,
     RECONNECT_INTERVAL: 3000,
-    MAX_SUBTITLE_HISTORY: 50,
-    AUDIO_BUFFER_SIZE: 8192
+    AUDIO_BUFFER_SIZE: 8192,
+    SUBTITLE_FADE_DURATION: 300
 };
+
+/**
+ * Initialize application
+ */
+async function initApp() {
+    console.log('Initializing Stream Subtitles...');
+    
+    // Initialize WebSocket
+    initWebSocket();
+    
+    // Load available microphones
+    await loadMicrophones();
+    
+    // Check application health
+    checkHealth();
+    
+    // Setup keyboard shortcuts
+    setupKeyboardShortcuts();
+}
+
+/**
+ * Load available microphone devices
+ */
+async function loadMicrophones() {
+    try {
+        // Request permission first
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Get all media devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableMicrophones = devices.filter(device => device.kind === 'audioinput');
+        
+        // Clear existing options
+        microphoneSelect.innerHTML = '';
+        
+        if (availableMicrophones.length === 0) {
+            microphoneSelect.innerHTML = '<option value="">No microphones found</option>';
+            return;
+        }
+        
+        // Add default option
+        microphoneSelect.innerHTML = '<option value="">Default Microphone</option>';
+        
+        // Add each microphone
+        availableMicrophones.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.textContent = device.label || `Microphone ${index + 1}`;
+            microphoneSelect.appendChild(option);
+        });
+        
+        console.log(`Found ${availableMicrophones.length} microphone(s)`);
+        
+    } catch (error) {
+        console.error('Failed to load microphones:', error);
+        microphoneSelect.innerHTML = '<option value="">Permission denied</option>';
+        showNotification('Microphone access denied. Please grant permission.', 'error');
+    }
+}
 
 /**
  * Initialize WebSocket connection
@@ -105,7 +168,7 @@ function handleTranscriptionResult(data) {
     processingIndicator.classList.remove('show');
     
     if (data.success && data.text && data.text.trim()) {
-        appendSubtitle(data.text.trim());
+        updateSubtitle(data.text.trim());
         updateStatistics(data);
     } else if (!data.success && data.error) {
         console.error('Transcription error:', data.error);
@@ -114,32 +177,31 @@ function handleTranscriptionResult(data) {
 }
 
 /**
- * Append subtitle to display area
+ * Update subtitle display (replaces previous text)
  */
-function appendSubtitle(text) {
-    const now = new Date().toLocaleTimeString();
+function updateSubtitle(text) {
+    currentSubtitleText = text;
+    
+    // Update main display
     const subtitleEl = document.createElement('div');
-    subtitleEl.className = 'subtitle-entry fade-in mb-2';
-    subtitleEl.innerHTML = `
-        <span class="text-muted small">[${now}]</span> 
-        <span class="subtitle-text">${escapeHtml(text)}</span>
-    `;
+    subtitleEl.className = 'subtitle-text fade-in';
+    subtitleEl.textContent = text;
     
-    // Clear placeholder if present
-    if (subtitleDisplay.querySelector('.text-center')) {
-        subtitleDisplay.innerHTML = '';
-    }
-    
+    // Clear and add new subtitle
+    subtitleDisplay.innerHTML = '';
     subtitleDisplay.appendChild(subtitleEl);
     
-    // Limit history
-    const subtitleEntries = subtitleDisplay.querySelectorAll('.subtitle-entry');
-    if (subtitleEntries.length > CONFIG.MAX_SUBTITLE_HISTORY) {
-        subtitleEntries[0].remove();
+    // Update fullscreen display if active
+    if (isFullscreen) {
+        const fullscreenEl = document.createElement('div');
+        fullscreenEl.className = 'subtitle-text fade-in';
+        fullscreenEl.textContent = text;
+        
+        fullscreenText.innerHTML = '';
+        fullscreenText.appendChild(fullscreenEl);
     }
     
-    // Auto-scroll
-    subtitleDisplay.scrollTop = subtitleDisplay.scrollHeight;
+    console.log('Subtitle updated:', text);
 }
 
 /**
@@ -161,25 +223,46 @@ function updateStatistics(data) {
     if (data.duration && data.processing_time) {
         const rtf = data.processing_time / data.duration;
         realtimeFactorEl.textContent = `${rtf.toFixed(2)}x`;
+        
+        // Show performance indicator
+        const rtfElement = realtimeFactorEl.parentElement;
+        if (rtf > 1.0) {
+            rtfElement.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)';
+        } else if (rtf > 0.5) {
+            rtfElement.style.background = 'linear-gradient(135deg, #ffa726 0%, #ff9800 100%)';
+        } else {
+            rtfElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
     }
 }
 
 /**
- * Start audio recording with improved WebSocket streaming
+ * Start audio recording with microphone selection
  */
 async function startRecording() {
     try {
         console.log('Starting recording...');
         
+        // Get selected microphone ID
+        selectedMicrophoneId = microphoneSelect.value || null;
+        
+        // Audio constraints
+        const audioConstraints = {
+            sampleRate: CONFIG.SAMPLE_RATE,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+        };
+        
+        // Add device ID if specific microphone selected
+        if (selectedMicrophoneId) {
+            audioConstraints.deviceId = { exact: selectedMicrophoneId };
+        }
+        
         // Get audio stream
         audioStream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                sampleRate: CONFIG.SAMPLE_RATE,
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            }
+            audio: audioConstraints
         });
         
         // Create audio context
@@ -230,6 +313,9 @@ async function startRecording() {
         subtitleDisplay.classList.add('recording-active');
         recordingBuffer = []; // Clear buffer
         
+        // Show recording indicator in subtitle area
+        updateSubtitle('? Recording... Speak now!');
+        
         showNotification('Recording started successfully', 'success');
         
     } catch (error) {
@@ -277,6 +363,9 @@ function stopRecording() {
         subtitleDisplay.classList.remove('recording-active');
         processingIndicator.classList.remove('show');
         
+        // Show waiting message
+        clearSubtitles();
+        
         showNotification('Recording stopped', 'info');
         
     } catch (error) {
@@ -288,12 +377,22 @@ function stopRecording() {
  * Clear subtitle display
  */
 function clearSubtitles() {
+    currentSubtitleText = '';
+    
+    // Clear main display
     subtitleDisplay.innerHTML = `
-        <div class="text-center text-muted">
-            <i class="fas fa-microphone fa-3x mb-3"></i>
-            <p>Click "Start Recording" to begin real-time transcription</p>
+        <div class="waiting-text">
+            <i class="fas fa-microphone-slash"></i><br>
+            Click "Start Recording" to begin live subtitles
         </div>
     `;
+    
+    // Clear fullscreen display
+    if (isFullscreen) {
+        fullscreenText.innerHTML = `
+            <div class="waiting-text">Ready for live subtitles...</div>
+        `;
+    }
     
     // Reset statistics
     processingTimeEl.textContent = '-';
@@ -305,54 +404,64 @@ function clearSubtitles() {
 }
 
 /**
- * Handle file upload
+ * Toggle fullscreen mode
  */
-async function handleFileUpload(file) {
-    console.log('Uploading file:', file.name);
+function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
     
-    const formData = new FormData();
-    formData.append('audio_file', file);
-    formData.append('language', languageSelect.value);
-    formData.append('model', modelSelect.value);
-    
-    // Show processing state
-    fileUploadArea.classList.add('processing');
-    fileResults.style.display = 'none';
-    
-    try {
-        const response = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: formData
-        });
+    if (isFullscreen) {
+        // Show fullscreen subtitle
+        fullscreenSubtitle.style.display = 'flex';
+        fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i> Exit Fullscreen';
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            fileTranscription.innerHTML = `
-                <p><strong>Transcription:</strong></p>
-                <div class="bg-light p-3 rounded mb-3">${escapeHtml(result.text)}</div>
-                <small class="text-muted">
-                    Processing time: ${result.processing_time?.toFixed(2)}s | 
-                    Language: ${result.language || 'N/A'} | 
-                    Confidence: ${result.language_probability ? (result.language_probability * 100).toFixed(1) + '%' : 'N/A'}
-                </small>
-            `;
-            fileResults.style.display = 'block';
-            showNotification('File transcription completed', 'success');
+        // Update fullscreen text with current subtitle
+        if (currentSubtitleText) {
+            fullscreenText.innerHTML = `<div class="subtitle-text">${escapeHtml(currentSubtitleText)}</div>`;
         } else {
-            throw new Error(result.error || 'Transcription failed');
+            fullscreenText.innerHTML = '<div class="waiting-text">Ready for live subtitles...</div>';
         }
         
-    } catch (error) {
-        console.error('File upload error:', error);
-        showNotification(`Upload failed: ${error.message}`, 'error');
-    } finally {
-        fileUploadArea.classList.remove('processing');
+    } else {
+        // Hide fullscreen subtitle
+        fullscreenSubtitle.style.display = 'none';
+        fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> Fullscreen';
     }
+}
+
+/**
+ * Setup keyboard shortcuts
+ */
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(event) {
+        // F key for fullscreen toggle
+        if (event.key === 'f' || event.key === 'F') {
+            event.preventDefault();
+            toggleFullscreen();
+        }
+        
+        // Space key for record toggle (when not in input fields)
+        if (event.code === 'Space' && !event.target.matches('input, select, textarea')) {
+            event.preventDefault();
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+        
+        // Escape key to exit fullscreen
+        if (event.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
+        }
+        
+        // C key to clear subtitles
+        if (event.key === 'c' || event.key === 'C') {
+            if (!event.target.matches('input, select, textarea')) {
+                event.preventDefault();
+                clearSubtitles();
+            }
+        }
+    });
 }
 
 /**
@@ -418,13 +527,10 @@ async function checkHealth() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Real-time Whisper Subtitles loaded...');
+    console.log('Stream Subtitles loading...');
     
-    // Initialize WebSocket
-    initWebSocket();
-    
-    // Check health
-    checkHealth();
+    // Initialize application
+    initApp();
     
     // Recording controls
     recordBtn.addEventListener('click', function() {
@@ -438,47 +544,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear button
     clearBtn.addEventListener('click', clearSubtitles);
     
-    // File upload handlers
-    fileUploadArea.addEventListener('click', () => audioFileInput.click());
-    
-    fileUploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.add('dragover');
-    });
-    
-    fileUploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.remove('dragover');
-    });
-    
-    fileUploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            const file = files[0];
-            if (file.type.startsWith('audio/')) {
-                handleFileUpload(file);
-            } else {
-                showNotification('Please select an audio file', 'warning');
-            }
-        }
-    });
-    
-    audioFileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFileUpload(e.target.files[0]);
-        }
-    });
+    // Fullscreen button
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
     
     // Settings change handlers
+    microphoneSelect.addEventListener('change', () => {
+        console.log('Microphone changed to:', microphoneSelect.value);
+        if (isRecording) {
+            // Restart recording with new microphone
+            stopRecording();
+            setTimeout(() => startRecording(), 500);
+        }
+    });
+    
     languageSelect.addEventListener('change', () => {
         console.log('Language changed to:', languageSelect.value);
     });
     
     modelSelect.addEventListener('change', () => {
         console.log('Model changed to:', modelSelect.value);
+    });
+    
+    // Fullscreen subtitle click to exit
+    fullscreenSubtitle.addEventListener('click', function() {
+        if (isFullscreen) {
+            toggleFullscreen();
+        }
     });
 });
 
@@ -515,14 +606,17 @@ window.addEventListener('focus', function() {
 
 // Export for debugging (development only)
 if (typeof window !== 'undefined') {
-    window.whisperApp = {
+    window.streamSubtitles = {
         websocket,
         isRecording,
+        isFullscreen,
         startRecording,
         stopRecording,
         clearSubtitles,
+        toggleFullscreen,
+        availableMicrophones,
         checkHealth
     };
 }
 
-console.log('Real-time Whisper Subtitles JavaScript loaded');
+console.log('Stream Subtitles JavaScript loaded - Press F for fullscreen, Space to record');
