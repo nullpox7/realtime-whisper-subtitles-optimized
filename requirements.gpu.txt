@@ -1,0 +1,95 @@
+# Real-time Whisper Subtitles - GPU Optimized Dependencies (v2.1.0)
+# CUDA 12.1 + cuDNN optimized for large-v3 model high accuracy
+# Encoding: UTF-8
+
+# Web Framework (essential)
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+websockets==12.0
+jinja2==3.1.3
+python-multipart==0.0.7
+
+# PyTorch with CUDA support (installed separately in Dockerfile)
+# torch==2.2.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+# torchaudio==2.2.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+
+# Core AI/ML (GPU optimized versions)
+faster-whisper==1.0.0
+transformers==4.37.2
+accelerate==0.26.1
+
+# Audio Processing (high-quality, compatible)
+librosa==0.10.1
+soundfile==0.12.1
+
+# Scientific Computing - GPU optimized and stable versions
+numpy>=1.24.0,<2.0.0
+scipy==1.12.0
+
+# CUDA optimization libraries
+cupy-cuda12x==13.0.0
+numba==0.59.0
+llvmlite==0.42.0
+
+# Redis client for caching and performance
+redis==5.0.4
+aioredis==2.0.1
+
+# System utilities
+psutil==5.9.8
+python-dotenv==1.0.1
+requests==2.31.0
+aiofiles==23.2.1
+
+# Production server
+gunicorn==21.2.0
+
+# Monitoring and metrics
+prometheus-client==0.20.0
+
+# Essential utilities
+tqdm==4.66.2
+packaging==23.2
+
+# Async HTTP client
+httpx==0.26.0
+
+# Logging utilities
+structlog==24.1.0
+
+# Date/time handling
+python-dateutil==2.8.2
+
+# Configuration management
+pyyaml==6.0.1
+
+# Memory optimization
+pympler==0.9
+
+# Additional ML/Audio dependencies optimized for GPU
+resampy==0.4.2
+audioread==3.0.1
+pooch>=1.8.0
+joblib>=1.3.2
+threadpoolctl>=3.1.0
+
+# Audio feature extraction (optional but recommended)
+pyworld==0.3.4
+pysptk==0.1.21
+
+# Advanced audio processing
+noisereduce==3.0.0
+
+# GPU memory management
+nvidia-ml-py==12.535.133
+
+# Additional performance libraries
+orjson==3.9.15
+msgpack==1.0.7
+
+# Development and debugging (optional)
+ipython==8.21.0
+jupyter==1.0.0
+
+# Model downloading and caching
+huggingface-hub==0.20.3
