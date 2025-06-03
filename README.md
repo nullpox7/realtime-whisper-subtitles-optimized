@@ -1,73 +1,94 @@
-# Real-time Whisper Subtitles (Fixed v2.0.3)
+# Real-time Whisper Subtitles - Stream Edition (v2.1.0)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![CUDA 12.9.0](https://img.shields.io/badge/CUDA-12.9.0-green.svg)](https://developer.nvidia.com/cuda-downloads)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
-**Real-time speech recognition and subtitle generation using OpenAI Whisper with CUDA optimization**
+**Real-time speech recognition and subtitle generation optimized for live streaming**
 
-OpenAI Whisper + CUDA 12.9.0 + cuDNN optimized Web application
+OpenAI Whisper + CUDA 12.9.0 + cuDNN optimized Web application with streaming focus
 
-## Latest Updates - v2.0.3 (2025-06-03) - Critical Fixes
+## Latest Updates - v2.1.0 (2025-06-03) - Stream Edition
 
-**ALL ISSUES FIXED**
+**NEW: OPTIMIZED FOR LIVE STREAMING**
 
-### Issues Resolved
-- **Character Encoding Fixed**: Complete English UI eliminates all encoding issues
-- **AudioSegment Conversion Failed**: PyDub dependency completely removed
-- **Audio Processing Errors**: Simplified processing with librosa/soundfile only
-- **WebRTC VAD Issues**: Replaced with reliable energy-based speech detection
-- **UTF-8 JSON Responses**: Proper UTF-8 encoding throughout the application
+### ? Stream Features Added
+- **Microphone Device Selection**: Choose from available audio input devices
+- **Fullscreen Subtitle Display**: Black background, large white text for streaming overlays
+- **No History Mode**: Live subtitles replace previous text (perfect for OBS/streaming)
+- **Keyboard Shortcuts**: F for fullscreen, Space for record toggle, C for clear
+- **Streaming UI**: Clean, minimal interface optimized for broadcasters
 
-### Quick Fix (Recommended)
+### ? Technical Improvements
+- **File Upload Removed**: Streamlined for real-time use only
+- **Energy-based Speech Detection**: Reliable without external dependencies
+- **UTF-8 Encoding Fixed**: Complete English UI eliminates encoding issues
+- **Simplified Audio Processing**: Direct microphone input with device selection
+
+### Quick Start for Streamers
 ```bash
-# Download and run the complete fix script
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_complete.sh
-chmod +x quick_fix_complete.sh
-./quick_fix_complete.sh
-```
-
-### Manual Update
-```bash
-# Pull latest fixes
-git pull origin main
-
-# Clean rebuild (removes PyDub and problematic dependencies)
-docker-compose down
-docker system prune -af
-docker-compose build --no-cache
+# Download and run
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
 docker-compose up -d
-```
 
-**Test the fix**: `curl http://localhost:8000/health`
+# Access at http://localhost:8000
+# Press F for fullscreen subtitle overlay
+```
 
 ---
 
 ## Key Features
 
-### Real-time Processing
+### ? Streaming Optimized
+- **Real-time Subtitles**: Live speech-to-text with minimal delay
+- **Microphone Selection**: Choose specific audio input device
+- **Fullscreen Mode**: Black background overlay perfect for OBS/streaming software
+- **No History**: Clean display showing only current speech (no scrolling)
+- **Keyboard Controls**: Space to start/stop, F for fullscreen, C to clear
+
+### ? Performance
+- **GPU Acceleration** with Real-Time Factor < 1.0
 - **WebSocket-based** real-time transcription
 - **Energy-based Speech Detection** (reliable and fast)
-- **GPU Acceleration** with Real-Time Factor < 1.0
+- **Optimized Models**: From tiny (fastest) to large-v3 (best quality)
 
-### AI Capabilities
+### ? AI Capabilities
 - **OpenAI Whisper** models (tiny to large-v3)
 - **faster-whisper** optimization
 - **Auto Language Detection** + 90+ languages
 - **Word-level Timestamps** with confidence scores
 
-### Modern Web Interface
-- **Full English UI** (encoding issues fixed)
-- **Bootstrap 5 + Font Awesome** responsive design
-- **Real-time Statistics** display
-- **File Upload Support** for batch processing
+### ? Modern Interface
+- **Stream-focused UI**: Minimal, clean design
+- **Collapsible Statistics**: Hide/show performance metrics
+- **Responsive Design**: Works on desktop and mobile
+- **Dark Theme Support**: Perfect for streaming setups
 
-### Production Ready
-- **Docker containerized** deployment
-- **Health monitoring** endpoints
-- **Comprehensive logging** with UTF-8 support
-- **Error recovery** and graceful degradation
+## Streaming Setup Guide
+
+### For OBS Studio
+1. Start the application: `docker-compose up -d`
+2. Open http://localhost:8000
+3. Select your microphone device
+4. Choose language and model
+5. Click fullscreen button or press F
+6. In OBS: Add Browser Source with URL: `http://localhost:8000` (fullscreen mode)
+7. Set source to fullscreen, enable CSS: `body { margin: 0; }`
+
+### For Other Streaming Software
+- **Fullscreen URL**: http://localhost:8000 (press F for fullscreen)
+- **Resolution**: Any (responsive)
+- **Background**: Black (#000000)
+- **Text Color**: White (#FFFFFF) with shadow
+- **Refresh Rate**: Real-time via WebSocket
+
+### Keyboard Shortcuts
+- **F**: Toggle fullscreen subtitle display
+- **Space**: Start/stop recording
+- **C**: Clear current subtitle
+- **Escape**: Exit fullscreen mode
 
 ## Quick Start
 
@@ -76,38 +97,32 @@ docker-compose up -d
 - **VRAM**: 4GB+ (8GB+ recommended)
 - **RAM**: 8GB+ (16GB+ recommended)
 - **CPU**: 4+ cores
-- **Storage**: 10GB+ free space
+- **Microphone**: Any USB or built-in microphone
 
-### System Requirements
-- **OS**: Ubuntu 20.04/22.04, CentOS 8+, or Windows with WSL2
-- **Docker**: 20.10+
-- **Docker Compose**: 2.0+
-- **NVIDIA Docker**: nvidia-docker2 (for GPU acceleration)
+### Installation
 
-## Installation & Setup
-
-### 1. Clone Repository
+#### 1. Clone Repository
 ```bash
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
 ```
 
-### 2. Environment Setup
+#### 2. Environment Setup
 ```bash
 # Copy environment file
 cp .env.example .env
 
-# Edit configuration if needed
+# Edit configuration if needed (optional)
 nano .env
 ```
 
-### 3. Create Data Directories
+#### 3. Create Data Directories
 ```bash
 mkdir -p data/{models,outputs,logs,cache}
 chmod -R 755 data/
 ```
 
-### 4. Run with Docker Compose
+#### 4. Run with Docker Compose
 ```bash
 # Basic startup
 docker-compose up -d
@@ -116,192 +131,240 @@ docker-compose up -d
 docker-compose --profile monitoring up -d
 ```
 
-### 5. Access Application
+#### 5. Access Application
 Open your browser and navigate to `http://localhost:8000`
-
-## Troubleshooting
-
-### Quick Fix for All Issues
-
-#### One-command Fix
-```bash
-# Download and run the complete fix script
-./quick_fix_complete.sh
-```
-
-#### Manual Troubleshooting
-
-##### Fixed Issue: "AudioSegment conversion failed"
-```bash
-# COMPLETELY FIXED in v2.0.3
-# PyDub dependency has been removed
-# Audio processing now uses librosa/soundfile only
-
-# Verification:
-curl http://localhost:8000/health
-# Should return: "status": "healthy"
-```
-
-##### Fixed Issue: Character encoding/display problems
-```bash
-# COMPLETELY FIXED in v2.0.3
-# All text is now in English
-# UTF-8 encoding properly configured throughout
-
-# Verification:
-curl http://localhost:8000/api/languages
-# Should return proper JSON with English language names
-```
-
-### NVIDIA Docker Setup
-
-#### Ubuntu/Debian
-```bash
-# Add NVIDIA GPG key
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-
-# Install NVIDIA Docker
-sudo apt-get update
-sudo apt-get install -y nvidia-docker2
-
-# Restart Docker
-sudo systemctl restart docker
-```
 
 ## Configuration
 
-### Performance Optimization
+### Model Selection (Speed vs Quality)
+- **tiny**: Fastest, good for real-time streaming
+- **base**: Balanced (recommended for most streams)
+- **small**: Better quality, slightly slower
+- **medium**: High quality, needs more processing power
+
+### Language Settings
+- **auto**: Auto-detect language (recommended)
+- **Specific**: Choose if you know the primary language
+
+### Microphone Setup
+1. Grant microphone permissions in browser
+2. Select your preferred microphone from dropdown
+3. Test recording to ensure audio levels are good
+
+## Stream Integration Examples
+
+### OBS Studio Integration
+```
+1. Add Browser Source
+2. URL: http://localhost:8000
+3. Width: 1920, Height: 1080 (or your stream resolution)
+4. Custom CSS (optional):
+   body { margin: 0; background: transparent; }
+   .fullscreen-subtitle { background: rgba(0,0,0,0.8); }
+5. Press F in browser for fullscreen subtitle mode
+```
+
+### Streamlabs OBS
+```
+1. Add Browser Source
+2. URL: http://localhost:8000
+3. Enable fullscreen mode (press F)
+4. Position and resize as needed
+```
+
+### XSplit
+```
+1. Add Web Page source
+2. URL: http://localhost:8000
+3. Use fullscreen mode for clean overlay
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### No Microphone Detected
+```bash
+# Check browser permissions
+# Refresh page after granting microphone access
+# Try different browser (Chrome recommended)
+```
+
+#### Audio Not Processing
+```bash
+# Check microphone levels
+# Verify WebSocket connection (green status indicator)
+# Check container logs: docker-compose logs whisper-subtitles
+```
+
+#### Performance Issues
+```bash
+# Use smaller model (tiny/base)
+# Check GPU usage: nvidia-smi
+# Reduce audio quality in browser settings
+```
+
+### Quick Fix Script
+```bash
+# Download and run the complete fix script
+curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_complete.sh
+chmod +x quick_fix_complete.sh
+./quick_fix_complete.sh
+```
+
+### Health Check
+```bash
+# Check application status
+curl http://localhost:8000/health
+
+# Should return:
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "gpu_available": true/false,
+  "version": "2.1.0"
+}
+```
+
+## API Endpoints
+
+### Health Check
+```bash
+curl http://localhost:8000/health
+```
+
+### Get Supported Languages
+```bash
+curl http://localhost:8000/api/languages
+```
+
+### Get Available Models
+```bash
+curl http://localhost:8000/api/models
+```
+
+## Advanced Configuration
+
+### Performance Tuning
 ```bash
 # High quality (slower)
 WHISPER_MODEL=large-v3
 BEAM_SIZE=5
 TEMPERATURE=0.0
-ENABLE_WORD_TIMESTAMPS=true
 
-# Fast processing (lower quality)
-WHISPER_MODEL=tiny
+# Fast processing (recommended for streaming)
+WHISPER_MODEL=base
 BEAM_SIZE=1
 TEMPERATURE=0.2
-ENABLE_WORD_TIMESTAMPS=false
 ```
 
 ### GPU Memory Management
 ```bash
 # Memory optimization
 CUDA_MEMORY_FRACTION=0.8
-BATCH_SIZE=8  # Reduce if out of memory
+BATCH_SIZE=8
 
 # Model optimization
-ENABLE_QUANTIZATION=true
-COMPUTE_TYPE=int8
+COMPUTE_TYPE=int8  # Use int8 for faster processing
 ```
 
-### Language Configuration
+## Monitoring & Logging
+
+### Real-time Monitoring
 ```bash
-# Auto-detect (default)
-LANGUAGE=auto
-
-# Specific language
-LANGUAGE=en  # English
-LANGUAGE=ja  # Japanese
-LANGUAGE=zh  # Chinese
-# ... supports 90+ languages
-```
-
-## Monitoring
-
-### Prometheus + Grafana
-```bash
-# Start with monitoring
+# With Prometheus + Grafana
 docker-compose --profile monitoring up -d
 
-# Access URLs
-# Prometheus: http://localhost:9090
-# Grafana: http://localhost:3000 (admin/admin)
+# Access Grafana at http://localhost:3000 (admin/admin)
 ```
 
-### Health Monitoring
+### Log Monitoring
 ```bash
-# Check application health
-curl http://localhost:8000/health
-
-# View logs
+# View application logs
 docker-compose logs -f whisper-subtitles
 
 # Monitor GPU usage
 watch -n 1 nvidia-smi
 ```
 
-## What's Fixed in v2.0.3
+## What's New in Stream Edition (v2.1.0)
 
-### Removed Problematic Dependencies
-- **PyDub**: Completely removed to fix "AudioSegment conversion failed"
-- **WebRTC VAD**: Replaced with simple energy-based detection
-- **noisereduce**: Removed to avoid NumPy compatibility issues
+### Streaming Optimizations
+- **Microphone Device Selection**: Choose from available audio input devices
+- **Fullscreen Subtitle Display**: Perfect for OBS overlay integration
+- **No History Mode**: Clean live subtitles without scrolling history
+- **Keyboard Shortcuts**: Quick controls for streamers
 
-### Improved Audio Processing
-- **Direct byte-to-array conversion**: No more PyDub conversion errors
-- **librosa/soundfile only**: Stable, well-tested audio libraries
-- **Energy-based speech detection**: Simple and reliable
-- **Better error handling**: Graceful fallbacks for all audio operations
+### Removed Features (Streamlined)
+- **File Upload**: Removed to focus on real-time streaming
+- **Complex History**: Simplified to single subtitle display
+- **Heavy Statistics**: Made collapsible to reduce clutter
 
-### Complete English Interface
-- **Full English UI**: No more character encoding issues
-- **UTF-8 JSON responses**: Proper encoding throughout
-- **English error messages**: Clear, readable error reporting
-- **Auto-detect language**: Still supports all languages for transcription
+### Technical Improvements
+- **Direct Audio Processing**: Simplified pipeline for lower latency
+- **Better Error Handling**: Graceful fallbacks for stream reliability
+- **WebSocket Optimization**: Improved real-time communication
+- **Memory Efficiency**: Optimized for long streaming sessions
 
-### Enhanced Reliability
-- **Simplified dependencies**: Fewer moving parts, more stability
-- **Better logging**: UTF-8 compatible logging with English messages
-- **Robust error handling**: Application continues running despite errors
-- **Health monitoring**: Better status reporting and diagnostics
+## Use Cases
 
-## Usage Examples
+### Perfect For:
+- **Live Streaming**: Twitch, YouTube, Facebook Gaming
+- **Virtual Meetings**: Zoom, Teams, Discord streams
+- **Content Creation**: Podcasts, tutorials, presentations
+- **Accessibility**: Real-time captions for hearing impaired viewers
+- **Language Learning**: Live translation demonstrations
+- **Gaming Streams**: Accessible gaming content
 
-### Real-time Transcription
-1. Open http://localhost:8000
-2. Click "Start Recording"
-3. Allow microphone access
-4. Speak into your microphone
-5. See real-time transcription appear
+### Example Streaming Setups:
+1. **Solo Gaming Stream**: Auto-detect language, base model, fullscreen overlay
+2. **Multilingual Stream**: Specific language selection, medium model
+3. **Podcast Recording**: Higher quality model, statistics visible
+4. **Virtual Meeting**: Auto-detect, collapsible stats, clean UI
 
-### File Upload
-1. Click on the file upload area
-2. Select an audio file (WAV, MP3, M4A, FLAC, OGG)
-3. Wait for processing
-4. View transcription results
+## System Requirements
 
-### API Usage
-```bash
-# Health check
-curl http://localhost:8000/health
+### Minimum (CPU-only)
+- **CPU**: 4+ cores
+- **RAM**: 8GB
+- **Model**: tiny or base
+- **Expected RTF**: 2-4x (slower than real-time)
 
-# Get supported languages
-curl http://localhost:8000/api/languages
+### Recommended (GPU)
+- **GPU**: NVIDIA GTX 1060 / RTX 2060 or better
+- **VRAM**: 4GB+
+- **CPU**: 6+ cores
+- **RAM**: 16GB
+- **Model**: base or small
+- **Expected RTF**: 0.3-0.8x (faster than real-time)
 
-# Get available models
-curl http://localhost:8000/api/models
-
-# File transcription
-curl -X POST \
-  -F "audio_file=@your_audio.wav" \
-  -F "language=auto" \
-  -F "model=base" \
-  http://localhost:8000/api/transcribe
-```
+### High Performance (GPU)
+- **GPU**: NVIDIA RTX 3070 / RTX 4060 or better
+- **VRAM**: 8GB+
+- **CPU**: 8+ cores
+- **RAM**: 32GB
+- **Model**: medium or large-v3
+- **Expected RTF**: 0.1-0.5x (much faster than real-time)
 
 ## Contributing
 
 We welcome contributions! Please:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/stream-improvement`)
+3. Commit your changes (`git commit -m 'Add stream feature'`)
+4. Push to the branch (`git push origin feature/stream-improvement`)
 5. Open a Pull Request
+
+### Development Setup
+```bash
+# Clone repository
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+
+# Development mode
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
 
 ## License
 
@@ -322,13 +385,35 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Support
 
-If you encounter any issues after applying the fixes:
+### Community Support
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: General questions and community help
+- **Discord**: Real-time community support (coming soon)
 
-1. **Run the quick fix script**: `./quick_fix_complete.sh`
-2. **Check the logs**: `docker-compose logs whisper-subtitles`
-3. **Verify health**: `curl http://localhost:8000/health`
-4. **Open an issue**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
+### Professional Support
+For enterprise deployments and custom integrations, contact us through GitHub Issues with the "enterprise" label.
+
+## Roadmap
+
+### v2.2.0 (Planned)
+- **Custom Font Selection**: Choose fonts for subtitle display
+- **Color Customization**: Custom text and background colors
+- **Position Controls**: Adjust subtitle position on screen
+- **Transparency**: Adjustable background transparency
+- **Hotkey Customization**: Custom keyboard shortcuts
+
+### v2.3.0 (Future)
+- **Multiple Language Support**: Real-time language switching
+- **Audio Effects**: Noise reduction and audio enhancement
+- **Cloud Integration**: Remote model hosting options
+- **Mobile App**: Dedicated mobile application
+
+### v3.0.0 (Vision)
+- **AI Translation**: Real-time translation between languages
+- **Voice Cloning**: AI voice synthesis for accessibility
+- **Advanced Analytics**: Detailed speech analysis and insights
+- **Plugin System**: Third-party integrations and extensions
 
 ---
 
-**All major issues have been resolved in v2.0.3. Enjoy stable, real-time speech recognition!**
+**Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
