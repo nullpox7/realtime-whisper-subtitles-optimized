@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Main Web Interface
-CUDA 12.9.0 + cuDNN optimized version
+Real-time Whisper Subtitles - Main Web Interface (Fixed)
+CUDA 12.9.0 + cuDNN optimized version - Encoding issues fixed
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -19,11 +19,12 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
+from fastapi.middleware.cors import CORSMiddleware
 import torch
 import torchaudio
 import numpy as np
@@ -32,14 +33,14 @@ import webrtcvad
 from pydub import AudioSegment
 import soundfile as sf
 
-# ???????????????????????? /app/data/logs
+# ??????????? /app/data/logs
 log_dir = os.getenv('LOG_PATH', '/app/data/logs')
 log_file_path = os.path.join(log_dir, 'whisper_app.log')
 
-# ???????????????????
+# ?????????????????
 os.makedirs(log_dir, exist_ok=True)
 
-# Configure logging
+# Configure logging with UTF-8 support
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -50,100 +51,118 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration
 class Config:
     """Application configuration"""
-    
-    # Server settings
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", 8000))
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-    
-    # Whisper settings
     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     COMPUTE_TYPE = "float16" if torch.cuda.is_available() else "int8"
-    
-    # Audio settings
     SAMPLE_RATE = int(os.getenv("SAMPLE_RATE", 16000))
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 1024))
-    VAD_MODE = int(os.getenv("VAD_MODE", 3))  # 0-3, aggressive level
-    
-    # Performance settings
-    MAX_WORKERS = int(os.getenv("MAX_WORKERS", 4))
-    BATCH_SIZE = int(os.getenv("BATCH_SIZE", 16))
-    
-    # Paths
-    MODEL_PATH = Path("/app/models")
-    OUTPUT_PATH = Path("/app/outputs")
+    VAD_MODE = int(os.getenv("VAD_MODE", 3))
+    MODEL_PATH = Path("/app/data/models")
+    OUTPUT_PATH = Path("/app/data/outputs")
     STATIC_PATH = Path("/app/static")
     TEMPLATE_PATH = Path("/app/templates")
 
-# Initialize FastAPI application
 app = FastAPI(
     title="Real-time Whisper Subtitles",
     description="Real-time speech recognition with faster-whisper",
-    version="2.0.0"
+    version="2.0.1"
 )
 
-# Static files and templates
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory=str(Config.STATIC_PATH)), name="static")
 templates = Jinja2Templates(directory=str(Config.TEMPLATE_PATH))
 
-# Global variables
+class UTF8JSONResponse(JSONResponse):
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
 whisper_model: Optional[WhisperModel] = None
 vad = webrtcvad.Vad(Config.VAD_MODE)
-active_connections: List[WebSocket] = []
 
 class AudioProcessor:
-    """Audio processing utilities"""
-    
     @staticmethod
     def preprocess_audio(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> np.ndarray:
-        """Preprocess audio data for Whisper"""
         try:
-            # Convert bytes to numpy array
-            audio_segment = AudioSegment.from_raw(
-                audio_data,
-                sample_width=2,  # 16-bit
-                frame_rate=sample_rate,
-                channels=1
-            )
+            if len(audio_data) == 0:
+                return np.array([], dtype=np.float32)
             
-            # Convert to numpy array
-            audio_array = np.array(audio_segment.get_array_of_samples(), dtype=np.float32)
-            audio_array = audio_array / 32768.0  # Normalize to [-1, 1]
+            try:
+                audio_segment = AudioSegment.from_raw(
+                    audio_data,
+                    sample_width=2,
+                    frame_rate=sample_rate,
+                    channels=1
+                )
+                audio_array = np.array(audio_segment.get_array_of_samples(), dtype=np.float32)
+                audio_array = audio_array / 32768.0
+                
+                if len(audio_array) == 0:
+                    return np.array([], dtype=np.float32)
+                
+                audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
+                audio_array = np.clip(audio_array, -1.0, 1.0)
+                return audio_array
+                
+            except Exception as e:
+                logger.error(f"AudioSegment conversion failed: {e}")
+                try:
+                    audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
+                    audio_array = audio_array / 32768.0
+                    audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
+                    audio_array = np.clip(audio_array, -1.0, 1.0)
+                    return audio_array
+                except Exception as e2:
+                    logger.error(f"Fallback audio conversion failed: {e2}")
+                    return np.array([], dtype=np.float32)
             
-            return audio_array
         except Exception as e:
             logger.error(f"Audio preprocessing error: {e}")
-            return np.array([])
+            return np.array([], dtype=np.float32)
     
     @staticmethod
     def detect_speech(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> bool:
-        """Detect speech using WebRTC VAD"""
         try:
-            if sample_rate not in [8000, 16000, 32000, 48000]:
-                # Resample to supported rate
-                sample_rate = 16000
-            
-            frame_duration = 30  # ms
-            frame_size = int(sample_rate * frame_duration / 1000)
-            
-            if len(audio_data) < frame_size * 2:  # 16-bit samples
+            if len(audio_data) == 0:
                 return False
             
-            return vad.is_speech(audio_data[:frame_size * 2], sample_rate)
+            supported_rates = [8000, 16000, 32000, 48000]
+            if sample_rate not in supported_rates:
+                sample_rate = min(supported_rates, key=lambda x: abs(x - sample_rate))
+            
+            frame_duration = 30
+            frame_size = int(sample_rate * frame_duration / 1000) * 2
+            
+            if len(audio_data) < frame_size:
+                return False
+            
+            frame_data = audio_data[:frame_size]
+            return vad.is_speech(frame_data, sample_rate)
+            
         except Exception as e:
             logger.error(f"VAD error: {e}")
-            return True  # Default to processing if VAD fails
+            return True
 
 class WhisperManager:
-    """Whisper model management"""
-    
     @staticmethod
     def load_model(model_name: str = Config.WHISPER_MODEL) -> WhisperModel:
-        """Load Whisper model"""
         try:
             model_path = Config.MODEL_PATH / "whisper" / model_name
             
@@ -156,6 +175,7 @@ class WhisperManager:
                 )
             else:
                 logger.info(f"Downloading model: {model_name}")
+                Config.MODEL_PATH.mkdir(parents=True, exist_ok=True)
                 model = WhisperModel(
                     model_name,
                     device=Config.DEVICE,
@@ -165,20 +185,26 @@ class WhisperManager:
             
             logger.info(f"Model loaded successfully: {model_name} on {Config.DEVICE}")
             return model
+            
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise
     
     @staticmethod
     async def transcribe(audio_array: np.ndarray, language: str = "ja") -> Dict:
-        """Transcribe audio using Whisper"""
         try:
             if whisper_model is None:
                 raise ValueError("Whisper model not loaded")
             
+            if len(audio_array) == 0:
+                return {
+                    "success": False,
+                    "error": "Empty audio data",
+                    "text": ""
+                }
+            
             start_time = time.time()
             
-            # Transcribe
             segments, info = whisper_model.transcribe(
                 audio_array,
                 language=language,
@@ -187,35 +213,57 @@ class WhisperManager:
                 temperature=0.0,
                 condition_on_previous_text=False,
                 initial_prompt=None,
-                word_timestamps=True
+                word_timestamps=True,
+                vad_filter=True,
+                vad_parameters={
+                    "threshold": 0.5,
+                    "min_speech_duration_ms": 250,
+                    "max_speech_duration_s": 30,
+                    "min_silence_duration_ms": 100,
+                    "speech_pad_ms": 30
+                }
             )
             
-            # Process segments
             results = []
             for segment in segments:
-                results.append({
-                    "start": segment.start,
-                    "end": segment.end,
-                    "text": segment.text.strip(),
-                    "words": [
-                        {
-                            "start": word.start,
-                            "end": word.end,
-                            "word": word.word,
-                            "probability": word.probability
-                        }
-                        for word in segment.words
-                    ] if hasattr(segment, 'words') and segment.words else []
-                })
+                try:
+                    segment_dict = {
+                        "start": float(segment.start),
+                        "end": float(segment.end),
+                        "text": segment.text.strip(),
+                        "words": []
+                    }
+                    
+                    if hasattr(segment, 'words') and segment.words:
+                        for word in segment.words:
+                            try:
+                                segment_dict["words"].append({
+                                    "start": float(word.start),
+                                    "end": float(word.end),
+                                    "word": word.word,
+                                    "probability": float(word.probability)
+                                })
+                            except Exception as e:
+                                logger.debug(f"Word processing error: {e}")
+                                continue
+                    
+                    results.append(segment_dict)
+                    
+                except Exception as e:
+                    logger.error(f"Segment processing error: {e}")
+                    continue
             
             processing_time = time.time() - start_time
+            audio_duration = getattr(info, 'duration', len(audio_array) / Config.SAMPLE_RATE)
+            rtf = processing_time / audio_duration if audio_duration > 0 else 0
             
             return {
                 "success": True,
                 "language": info.language,
-                "language_probability": info.language_probability,
-                "duration": info.duration,
-                "processing_time": processing_time,
+                "language_probability": float(info.language_probability),
+                "duration": float(audio_duration),
+                "processing_time": float(processing_time),
+                "real_time_factor": float(rtf),
                 "segments": results,
                 "text": " ".join([seg["text"] for seg in results])
             }
@@ -228,7 +276,6 @@ class WhisperManager:
                 "text": ""
             }
 
-# WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -245,33 +292,19 @@ class ConnectionManager:
     
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         try:
-            await websocket.send_text(json.dumps(message, ensure_ascii=False))
+            message_json = json.dumps(message, ensure_ascii=False)
+            await websocket.send_text(message_json)
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
-    
-    async def broadcast(self, message: dict):
-        disconnected = []
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(json.dumps(message, ensure_ascii=False))
-            except Exception as e:
-                logger.error(f"Broadcast error: {e}")
-                disconnected.append(connection)
-        
-        # Remove disconnected connections
-        for connection in disconnected:
-            self.disconnect(connection)
 
 manager = ConnectionManager()
 
 @app.on_event("startup")
 async def startup_event():
-    """Application startup"""
     global whisper_model
     
     logger.info("Starting Real-time Whisper Subtitles...")
     
-    # Check GPU availability
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
         current_device = torch.cuda.current_device()
@@ -284,11 +317,9 @@ async def startup_event():
     else:
         logger.warning("GPU not available, using CPU")
     
-    # Create directories
     Config.MODEL_PATH.mkdir(parents=True, exist_ok=True)
     Config.OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     
-    # Load Whisper model
     try:
         whisper_model = WhisperManager.load_model()
         logger.info("Whisper model loaded successfully")
@@ -298,19 +329,21 @@ async def startup_event():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    """Main page"""
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "title": "Real-time Whisper Subtitles"
-    })
+    try:
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "title": "??????????"
+        })
+    except Exception as e:
+        logger.error(f"Template rendering error: {e}")
+        raise HTTPException(status_code=500, detail="Template rendering failed")
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     gpu_available = torch.cuda.is_available()
     model_loaded = whisper_model is not None
     
-    return JSONResponse({
+    return UTF8JSONResponse({
         "status": "healthy" if model_loaded else "loading",
         "gpu_available": gpu_available,
         "model_loaded": model_loaded,
@@ -326,68 +359,69 @@ async def transcribe_file(
     language: str = Form("ja"),
     model: str = Form(Config.WHISPER_MODEL)
 ):
-    """Transcribe uploaded audio file"""
     try:
-        # Save uploaded file temporarily
+        if not audio_file.filename:
+            raise HTTPException(status_code=400, detail="No file uploaded")
+        
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             content = await audio_file.read()
             temp_file.write(content)
             temp_file_path = temp_file.name
         
-        # Load and preprocess audio
-        audio_array, sample_rate = sf.read(temp_file_path)
-        
-        # Ensure mono and correct sample rate
-        if len(audio_array.shape) > 1:
-            audio_array = audio_array.mean(axis=1)
-        
-        if sample_rate != Config.SAMPLE_RATE:
-            import librosa
-            audio_array = librosa.resample(
-                audio_array, 
-                orig_sr=sample_rate, 
-                target_sr=Config.SAMPLE_RATE
-            )
-        
-        # Transcribe
-        result = await WhisperManager.transcribe(audio_array, language)
-        
-        # Clean up
-        os.unlink(temp_file_path)
-        
-        return JSONResponse(result)
+        try:
+            audio_array, sample_rate = sf.read(temp_file_path)
+            
+            if len(audio_array.shape) > 1:
+                audio_array = audio_array.mean(axis=1)
+            
+            if sample_rate != Config.SAMPLE_RATE:
+                import librosa
+                audio_array = librosa.resample(
+                    audio_array, 
+                    orig_sr=sample_rate, 
+                    target_sr=Config.SAMPLE_RATE
+                )
+            
+            audio_array = audio_array.astype(np.float32)
+            audio_array = np.clip(audio_array, -1.0, 1.0)
+            
+            result = await WhisperManager.transcribe(audio_array, language)
+            os.unlink(temp_file_path)
+            
+            return UTF8JSONResponse(result)
+            
+        except Exception as e:
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+            raise e
         
     except Exception as e:
         logger.error(f"File transcription error: {e}")
-        return JSONResponse({
+        return UTF8JSONResponse({
             "success": False,
             "error": str(e)
         }, status_code=500)
 
 @app.websocket("/ws/realtime")
 async def websocket_endpoint(websocket: WebSocket):
-    """Real-time transcription WebSocket"""
     await manager.connect(websocket)
     
     try:
         while True:
-            # Receive audio data
             data = await websocket.receive_bytes()
             
-            # Check if speech is detected
             if not AudioProcessor.detect_speech(data):
                 continue
             
-            # Preprocess audio
             audio_array = AudioProcessor.preprocess_audio(data)
             
             if len(audio_array) == 0:
                 continue
             
-            # Transcribe
-            result = await WhisperManager.transcribe(audio_array)
+            if len(audio_array) < Config.SAMPLE_RATE * 0.5:
+                continue
             
-            # Send result
+            result = await WhisperManager.transcribe(audio_array)
             await manager.send_personal_message(result, websocket)
             
     except WebSocketDisconnect:
@@ -398,7 +432,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/models")
 async def get_available_models():
-    """Get available Whisper models"""
     models = [
         {"name": "tiny", "size": "39MB", "speed": "~32x"},
         {"name": "base", "size": "74MB", "speed": "~16x"},
@@ -408,34 +441,31 @@ async def get_available_models():
         {"name": "large-v3", "size": "1550MB", "speed": "~1x"}
     ]
     
-    return JSONResponse({"models": models})
+    return UTF8JSONResponse({"models": models})
 
 @app.get("/api/languages")
 async def get_supported_languages():
-    """Get supported languages"""
     languages = [
-        {"code": "ja", "name": "Japanese"},
+        {"code": "ja", "name": "???"},
         {"code": "en", "name": "English"},
-        {"code": "zh", "name": "Chinese"},
-        {"code": "ko", "name": "Korean"},
-        {"code": "es", "name": "Spanish"},
-        {"code": "fr", "name": "French"},
-        {"code": "de", "name": "German"},
-        {"code": "it", "name": "Italian"},
-        {"code": "pt", "name": "Portuguese"},
-        {"code": "ru", "name": "Russian"},
-        {"code": "ar", "name": "Arabic"},
-        {"code": "hi", "name": "Hindi"}
+        {"code": "zh", "name": "??"},
+        {"code": "ko", "name": "???"},
+        {"code": "es", "name": "Espa?ol"},
+        {"code": "fr", "name": "Fran?ais"},
+        {"code": "de", "name": "Deutsch"},
+        {"code": "it", "name": "Italiano"},
+        {"code": "pt", "name": "Portugu?s"},
+        {"code": "ru", "name": "???????"},
+        {"code": "ar", "name": "???????"},
+        {"code": "hi", "name": "??????"}
     ]
     
-    return JSONResponse({"languages": languages})
+    return UTF8JSONResponse({"languages": languages})
 
 if __name__ == "__main__":
-    # Create necessary directories
     for path in [Config.STATIC_PATH, Config.TEMPLATE_PATH, Config.MODEL_PATH, Config.OUTPUT_PATH]:
         path.mkdir(parents=True, exist_ok=True)
     
-    # Run the application
     uvicorn.run(
         "web_interface:app",
         host=Config.HOST,
