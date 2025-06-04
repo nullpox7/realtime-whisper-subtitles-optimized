@@ -125,18 +125,6 @@ RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /home/appuser/.cache/torch \
     && mkdir -p /home/appuser/.cache/huggingface
 
-# Pre-download large-v3 model (optional but recommended)
-RUN python3 -c "
-try:
-    from faster_whisper import WhisperModel
-    print('Pre-downloading large-v3 model...')
-    model = WhisperModel('large-v3', device='cpu', download_root='/app/data/models/whisper')
-    print('Model downloaded successfully!')
-except Exception as e:
-    print(f'Model download failed: {e}')
-    print('Will download on first use')
-"
-
 # Expose port
 EXPOSE 8000
 
