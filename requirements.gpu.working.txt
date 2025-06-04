@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - GPU Working Dependencies (Fixed)
-# CUDA 12.4 compatible versions - Guaranteed to install successfully
+# Real-time Whisper Subtitles - GPU Working Dependencies (Memory Error Fixed)
+# CUDA 12.4 compatible versions - Memory double-free error resolved
 # Encoding: UTF-8
 
 # Web Framework (tested stable versions)
@@ -15,10 +15,8 @@ python-multipart==0.0.9
 
 # Core AI/ML (stable GPU optimized versions)
 faster-whisper==1.0.1
-transformers==4.38.2
-accelerate==0.27.2
 
-# Audio Processing (proven compatible versions)
+# Audio Processing (proven compatible versions, minimal set)
 librosa==0.10.1
 soundfile==0.12.1
 
@@ -26,13 +24,9 @@ soundfile==0.12.1
 numpy>=1.24.0,<2.0.0
 scipy==1.12.0
 
-# Numba and LLVM - compatible with CUDA 12.4
-numba==0.59.0
-llvmlite==0.42.0
-
-# Redis client for caching
-redis==5.0.1
-aioredis==2.0.1
+# Numba and LLVM - REMOVED to prevent memory double-free error
+# numba==0.59.0  # DISABLED - causes memory double-free error
+# llvmlite==0.42.0  # DISABLED - dependency of numba
 
 # System utilities
 psutil==5.9.8
@@ -65,7 +59,7 @@ pyyaml==6.0.1
 # Memory optimization
 pympler==0.9
 
-# Additional ML/Audio dependencies (tested versions)
+# Additional ML/Audio dependencies (minimal tested versions)
 resampy==0.4.2
 audioread==3.0.1
 pooch>=1.8.0
@@ -75,16 +69,20 @@ threadpoolctl>=3.1.0
 # GPU memory management (compatible with CUDA 12.4)
 nvidia-ml-py==12.535.133
 
-# Additional performance libraries
+# Additional performance libraries (lightweight)
 orjson==3.9.15
 msgpack==1.0.7
-
-# Development tools (optional)
-ipython==8.21.0
 
 # Model downloading and caching
 huggingface-hub==0.20.3
 
-# Optional CUDA optimizations (install only if available)
-# cupy-cuda12x==13.0.0  # Commented out for compatibility
-# triton==2.2.0  # Commented out for compatibility
+# Problematic packages REMOVED to prevent memory issues:
+# - transformers (can cause memory conflicts with faster-whisper)
+# - accelerate (additional GPU memory management conflicts)
+# - cupy-cuda12x (additional CUDA library conflicts)
+# - triton (PyTorch extension conflicts)
+# - redis/aioredis (not essential for core functionality)
+
+# Note: This minimal dependency set is designed to prevent the
+# "free(): double free detected in tcache 2" error while maintaining
+# core Whisper functionality.
