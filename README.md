@@ -18,17 +18,23 @@ OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with strea
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
-[? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh) | [? **CUDA Fix Tool**](fix_cuda_image.sh)
+[? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh) | [? **Repository Cleanup**](CLEANUP.md)
 
-## Latest Updates - v2.2.1 (2025-06-04) - CUDA Compatibility Fixed
+## Latest Updates - v2.2.1 (2025-06-04) - Repository Organized
 
-**NEW: CUDA COMPATIBILITY FIX + AUTO-DETECTION**
+**NEW: REPOSITORY CLEANUP + SETUP IMPROVEMENTS**
 
-### ? CUDA Image Compatibility
-- **Auto CUDA Detection**: Automatically finds compatible CUDA images
-- **Multiple CUDA Support**: CUDA 12.9, 12.4, 12.2, 12.1 compatibility
-- **Smart Fallback**: Graceful fallback to stable versions
-- **One-Click Fix**: `./fix_cuda_image.sh` for automatic resolution
+### ? Repository Organization
+- **Clean Structure**: Removed legacy debugging and fix scripts
+- **Setup Script Added**: `./setup.sh` now available in root directory
+- **File Management**: Clear separation of essential vs deprecated files
+- **Easy Cleanup**: Use `./cleanup_deprecated.sh` to remove old files
+
+### ? Streamlined Setup Options
+- **Universal Setup**: `./setup.sh` - Standard installation
+- **GPU Setup**: `./setup_gpu.sh` - GPU-optimized installation
+- **Quick Start**: `./quick_start.sh` - Auto-detects and configures system
+- **Repository Cleanup**: `./cleanup_deprecated.sh` - Removes unnecessary files
 
 ### ? GPU Edition Features
 - **CUDA 12.9 Optimization**: Latest NVIDIA GPU acceleration
@@ -44,15 +50,28 @@ OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with strea
 - **Keyboard Shortcuts**: F for fullscreen, Space for record toggle, C for clear
 - **Streaming UI**: Clean, minimal interface optimized for broadcasters
 
-### ?? Technical Improvements
+### ? Technical Improvements
 - **Energy-based Speech Detection**: Reliable without external dependencies
 - **UTF-8 Encoding Fixed**: Complete English UI eliminates encoding issues
 - **Simplified Audio Processing**: Direct microphone input with device selection
-- **CUDA Auto-Compatibility**: Automatic CUDA version detection and optimization
+- **Clean Repository Structure**: Essential files only, deprecated files removable
 
-### Quick Start Options
+## Quick Start Options
 
-#### ? GPU Edition (Recommended)
+### ? Universal Quick Start (Recommended)
+```bash
+# Clone repository
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+
+# Auto-setup (detects GPU/CPU and configures automatically)
+chmod +x quick_start.sh
+./quick_start.sh
+
+# Access at http://localhost:8000
+```
+
+### ? GPU Edition (Maximum Performance)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -62,34 +81,34 @@ cd realtime-whisper-subtitles-optimized
 chmod +x setup_gpu.sh
 ./setup_gpu.sh
 
-# Or manual GPU setup
-cp .env.gpu.example .env
-docker-compose -f docker-compose.gpu.yml up -d
-
 # Access at http://localhost:8000
 ```
 
-#### ? CUDA Image Issues? (Auto-Fix)
+### ?? Standard Edition (CPU/Basic GPU)
 ```bash
-# If you encounter CUDA image not found errors:
-chmod +x fix_cuda_image.sh
-./fix_cuda_image.sh
-
-# This will automatically:
-# - Detect available CUDA images
-# - Create compatible Dockerfile
-# - Build and start the application
-```
-
-#### ? Standard Edition
-```bash
-# Download and run
+# Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
+
+# Standard setup
+chmod +x setup.sh
+./setup.sh
+
+# Or manual setup
+cp .env.example .env
 docker-compose up -d
 
 # Access at http://localhost:8000
-# Press F for fullscreen subtitle overlay
+```
+
+### ? Repository Cleanup (Optional)
+```bash
+# Remove deprecated debugging and fix scripts
+chmod +x cleanup_deprecated.sh
+./cleanup_deprecated.sh
+
+# This removes legacy files that are no longer needed
+# See CLEANUP.md for detailed information
 ```
 
 ---
@@ -154,9 +173,41 @@ docker-compose up -d
 - **Model**: tiny, base, or small recommended
 - **Expected RTF**: 2-8x (slower than real-time)
 
+## Setup Scripts
+
+### Available Setup Options
+
+| Script | Purpose | Best For |
+|--------|---------|----------|
+| `./quick_start.sh` | Universal auto-setup | New users, auto-detection |
+| `./setup.sh` | Standard installation | CPU/basic GPU systems |
+| `./setup_gpu.sh` | GPU-optimized setup | High-performance GPU systems |
+| `./cleanup_deprecated.sh` | Remove old files | Repository maintenance |
+
+### Setup Script Features
+- **Auto-detection**: Automatically detects GPU availability and CUDA compatibility
+- **Dependency Check**: Verifies Docker, Docker Compose, and NVIDIA drivers
+- **Environment Setup**: Creates appropriate `.env` configuration
+- **Model Download**: Optional pre-download of Whisper models
+- **Health Verification**: Tests application startup and connectivity
+
 ## Installation
 
-### GPU Edition Setup (Recommended)
+### Method 1: Universal Quick Start (Easiest)
+```bash
+# 1. Clone repository
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+
+# 2. Run universal setup (auto-detects system capabilities)
+chmod +x quick_start.sh
+./quick_start.sh
+
+# 3. Access application
+open http://localhost:8000
+```
+
+### Method 2: GPU Edition Setup (Maximum Performance)
 ```bash
 # 1. Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -165,7 +216,7 @@ cd realtime-whisper-subtitles-optimized
 # 2. Check GPU compatibility
 nvidia-smi  # Should show CUDA support
 
-# 3. Automated setup (includes CUDA auto-detection)
+# 3. Automated GPU setup
 chmod +x setup_gpu.sh
 ./setup_gpu.sh
 
@@ -173,7 +224,21 @@ chmod +x setup_gpu.sh
 open http://localhost:8000
 ```
 
-### Standard Edition Setup
+### Method 3: Standard Edition Setup
+```bash
+# 1. Clone repository
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+
+# 2. Standard setup
+chmod +x setup.sh
+./setup.sh
+
+# 3. Access application
+open http://localhost:8000
+```
+
+### Method 4: Manual Setup
 ```bash
 # 1. Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -193,40 +258,34 @@ docker-compose up -d
 open http://localhost:8000
 ```
 
+## Repository Management
+
+### ? Cleanup Deprecated Files
+This repository includes legacy debugging and fix scripts that are no longer needed. You can safely remove them:
+
+```bash
+# View what will be removed
+./cleanup_deprecated.sh
+
+# The script removes:
+# - Legacy debugging scripts (debug_*.py, fix_*.sh)
+# - Emergency fix scripts (quick_fix_*.sh)
+# - Duplicate Dockerfiles and configurations
+# - Outdated documentation files
+
+# See CLEANUP.md for detailed information
+```
+
+### ? Essential Files (Keep These)
+- **Main Configuration**: `Dockerfile`, `docker-compose.yml`, `requirements.txt`
+- **GPU Configuration**: `Dockerfile.gpu`, `docker-compose.gpu.yml`, `requirements.gpu.txt`
+- **Setup Scripts**: `setup.sh`, `setup_gpu.sh`, `quick_start.sh`
+- **Application Code**: `src/`, `static/`, `templates/`, `config/`
+- **Documentation**: `README.md`, `README_GPU.md`, `SETUP.md`
+
 ## Troubleshooting
 
-### ? CUDA Image Issues (New!)
-```bash
-# If you see "nvidia/cuda:12.9.0-cudnn-devel-ubuntu22.04 image not found":
-chmod +x fix_cuda_image.sh
-./fix_cuda_image.sh
-
-# This automatically:
-# - Detects available CUDA images (12.9, 12.4, 12.2, 12.1)
-# - Creates compatible Dockerfile.gpu.fixed
-# - Updates docker-compose configuration
-# - Builds and starts the application
-```
-
-### Quick Fix Scripts
-```bash
-# General issues
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_complete.sh
-chmod +x quick_fix_complete.sh
-./quick_fix_complete.sh
-
-# GPU specific issues (if using GPU edition)
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_gpu.sh
-chmod +x quick_fix_gpu.sh
-./quick_fix_gpu.sh
-
-# CUDA compatibility issues (new!)
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/fix_cuda_image.sh
-chmod +x fix_cuda_image.sh
-./fix_cuda_image.sh
-```
-
-### Health Check
+### Quick Health Check
 ```bash
 # Check application status
 curl http://localhost:8000/health
@@ -236,8 +295,7 @@ curl http://localhost:8000/health
   "status": "healthy",
   "model_loaded": true,
   "gpu_available": true/false,
-  "version": "2.2.1",
-  "model_name": "large-v3"  // if using GPU edition
+  "version": "2.2.1"
 }
 ```
 
@@ -245,21 +303,21 @@ curl http://localhost:8000/health
 
 | Issue | Solution |
 |-------|----------|
-| ? CUDA image not found | Run `./fix_cuda_image.sh` |
+| ? Setup script not found | Ensure you're in project root, use `chmod +x setup.sh` |
 | ? GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
 | ? Model loading slow | Use smaller model (base/small) or check VRAM |
 | ? High latency | Reduce batch size or use faster model |
 | ? Audio not working | Check microphone permissions in browser |
+| ? Too many files | Run `./cleanup_deprecated.sh` to remove old files |
 
-## Available Dockerfiles
+### Available Docker Configurations
 
-| Dockerfile | CUDA Version | Best For |
-|------------|--------------|----------|
-| `Dockerfile.gpu` | 12.9 | Latest features, RTX 40xx |
-| `Dockerfile.gpu.stable` | 12.4 | Production stability |
-| `Dockerfile.gpu.fixed` | Auto-detected | Universal compatibility |
-| `Dockerfile` | Auto (CPU/GPU) | Standard deployment |
-| `Dockerfile.cpu` | N/A | CPU-only systems |
+| Configuration | File | Best For |
+|---------------|------|----------|
+| Standard | `docker-compose.yml` | General use, auto GPU/CPU detection |
+| GPU Optimized | `docker-compose.gpu.yml` | High-performance GPU systems |
+| CPU Only | `docker-compose.cpu.yml` | CPU-only systems |
+| Production | `docker-compose.prod.yml` | Production deployment |
 
 ## Configuration
 
@@ -309,7 +367,7 @@ curl http://localhost:8000/api/models
 ## Streaming Setup Guide
 
 ### For OBS Studio
-1. Start the application: `docker-compose up -d` or GPU version
+1. Start the application: `./quick_start.sh` or `docker-compose up -d`
 2. Open http://localhost:8000
 3. Select your microphone device
 4. Choose language and model (large-v3 for best quality)
@@ -377,8 +435,8 @@ curl http://localhost:8000/api/models
 ## Documentation
 
 - **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.9 + Large-v3 guide
-- **Quick Start Guide**: [SETUP.md](SETUP.md) - Standard setup instructions
-- **CUDA Fix Tool**: [fix_cuda_image.sh](fix_cuda_image.sh) - Automatic CUDA compatibility
+- **Standard Setup Guide**: [SETUP.md](SETUP.md) - Detailed setup instructions
+- **Repository Cleanup**: [CLEANUP.md](CLEANUP.md) - File organization and cleanup guide
 - **Issue Tracker**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/discussions)
 
@@ -439,4 +497,4 @@ For enterprise deployments and custom integrations, contact us through GitHub Is
 
 **? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.9 + Large-v3 model!**
 
-**? Having CUDA issues? Use our [Auto-Fix Tool](fix_cuda_image.sh) for instant resolution!**
+**? Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
