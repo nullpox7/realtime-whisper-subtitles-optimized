@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - GPU Working Dockerfile (Fixed)
-# NVIDIA CUDA 12.4 + cuDNN optimized - Guaranteed to build successfully
+# Real-time Whisper Subtitles - GPU Working Dockerfile (Memory Error Fixed)
+# NVIDIA CUDA 12.4 + cuDNN optimized - Memory double-free error resolved
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
@@ -14,6 +14,11 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
+# Locale settings (use C.UTF-8 which is guaranteed to be available)
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Asia/Tokyo
+
 # CUDA and GPU optimization environment variables
 ENV CUDA_VISIBLE_DEVICES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
@@ -21,16 +26,21 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV CUDA_CACHE_PATH=/tmp/cuda_cache
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
 
-# Numba optimization for GPU
-ENV NUMBA_DISABLE_JIT=0
+# Memory error prevention - Disable Numba JIT completely to avoid double-free
+ENV NUMBA_DISABLE_JIT=1
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
-ENV NUMBA_THREADING_LAYER=workqueue
-ENV NUMBA_PARALLEL=1
+ENV NUMBA_THREADING_LAYER=safe
+ENV NUMBA_PARALLEL=0
 
 # CUDA specific optimizations
 ENV CUDA_MODULE_LOADING=LAZY
 ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 ENV TORCH_CUDNN_V8_API_ENABLED=1
+
+# Memory allocator stabilization
+ENV MALLOC_TRIM_THRESHOLD_=131072
+ENV MALLOC_MMAP_THRESHOLD_=131072
+ENV MALLOC_MMAP_MAX_=65536
 
 # Update package lists and install basic dependencies
 RUN apt-get update && apt-get install -y \
@@ -56,7 +66,7 @@ RUN apt-get install -y \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Install audio processing libraries
+# Install audio processing libraries (minimal set to avoid conflicts)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libavcodec-dev \
@@ -65,17 +75,12 @@ RUN apt-get update && apt-get install -y \
     libswscale-dev \
     libswresample-dev \
     libasound2-dev \
-    portaudio19-dev \
-    libportaudio2 \
-    libportaudiocpp0 \
-    libpulse-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install optional packages (with error handling)
+# Install optional packages with error handling
 RUN apt-get update && apt-get install -y \
     htop \
     && apt-get install -y nvtop || echo "nvtop not available, skipping..." \
-    && apt-get install -y libnccl2 libnccl-dev || echo "NCCL libraries not available, skipping..." \
     && rm -rf /var/lib/apt/lists/*
 
 # Create symbolic links for python
@@ -100,7 +105,7 @@ RUN python3.11 -m pip install --upgrade pip setuptools wheel
 # Install PyTorch with CUDA 12.4 support (stable version)
 RUN python3.11 -m pip install torch==2.4.1+cu124 torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
 
-# Install other Python dependencies
+# Install other Python dependencies (memory-safe versions)
 RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.working.txt
 
 # Create necessary directories with proper permissions
