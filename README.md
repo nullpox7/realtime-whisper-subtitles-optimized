@@ -1,28 +1,35 @@
-# Real-time Whisper Subtitles - Stream Edition (v2.2.1)
+# Real-time Whisper Subtitles - Stream Edition (v2.2.2)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![CUDA 12.9](https://img.shields.io/badge/CUDA-12.9-green.svg)](https://developer.nvidia.com/cuda-downloads)
+[![CUDA 12.1](https://img.shields.io/badge/CUDA-12.1-green.svg)](https://developer.nvidia.com/cuda-downloads)
 [![Whisper Large-v3](https://img.shields.io/badge/Whisper-Large--v3-blue.svg)](https://github.com/openai/whisper)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 **Real-time speech recognition and subtitle generation optimized for live streaming**
 
-OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with streaming focus
+OpenAI Whisper + CUDA 12.1 + Large-v3 model optimized Web application with streaming focus
 
 ## ? GPU Edition Available - [README_GPU.md](README_GPU.md)
 
-**NEW: CUDA 12.9 + Large-v3 Model Support**
+**NEW: CUDA 12.1 + Large-v3 Model Support**
 - **Maximum Accuracy**: 97%+ accuracy with Large-v3 model
-- **CUDA 12.9 Optimized**: Latest GPU acceleration technology
+- **CUDA 12.1 Optimized**: Stable GPU acceleration technology
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
 [? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh) | [? **Repository Cleanup**](CLEANUP.md)
 
-## Latest Updates - v2.2.1 (2025-06-04) - Repository Organized
+## Latest Updates - v2.2.2 (2025-06-04) - PyTorch Compatibility Fixed
 
-**NEW: REPOSITORY CLEANUP + SETUP IMPROVEMENTS**
+**NEW: PYTORCH SYMBOL ERROR RESOLVED**
+
+### ? PyTorch Compatibility Fix
+- **Symbol Error Fixed**: Resolved OSError: undefined symbol _ZNK3c105Error4whatEv
+- **CUDA 12.1**: Switched to stable CUDA 12.1 from 12.4 for better compatibility
+- **PyTorch 2.4.1+cu121**: Exact version match between PyTorch and torchaudio
+- **C++ ABI Compatibility**: Added proper C++ ABI flags for symbol resolution
+- **Removed Problematic Dependencies**: Eliminated cupy, triton causing conflicts
 
 ### ? Repository Organization
 - **Clean Structure**: Removed legacy debugging and fix scripts
@@ -37,13 +44,13 @@ OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with strea
 - **Repository Cleanup**: `./cleanup_deprecated.sh` - Removes unnecessary files
 
 ### ? GPU Edition Features
-- **CUDA 12.9 Optimization**: Latest NVIDIA GPU acceleration
+- **CUDA 12.1 Optimization**: Stable NVIDIA GPU acceleration
 - **Large-v3 Model**: Maximum accuracy speech recognition (97%+)
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Memory Optimized**: Smart GPU memory management
 - **Multi-GPU Support**: Scale across multiple GPUs
 
-### ? Stream Features (Continued)
+### ?? Stream Features (Continued)
 - **Microphone Device Selection**: Choose from available audio input devices
 - **Fullscreen Subtitle Display**: Black background, large white text for streaming overlays
 - **No History Mode**: Live subtitles replace previous text (perfect for OBS/streaming)
@@ -84,7 +91,7 @@ chmod +x setup_gpu.sh
 # Access at http://localhost:8000
 ```
 
-### ?? Standard Edition (CPU/Basic GPU)
+### ? Standard Edition (CPU/Basic GPU)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -115,7 +122,7 @@ chmod +x cleanup_deprecated.sh
 
 ## Key Features
 
-### ? Streaming Optimized
+### ?? Streaming Optimized
 - **Real-time Subtitles**: Live speech-to-text with minimal delay
 - **Microphone Selection**: Choose specific audio input device
 - **Fullscreen Mode**: Black background overlay perfect for OBS/streaming software
@@ -295,7 +302,7 @@ curl http://localhost:8000/health
   "status": "healthy",
   "model_loaded": true,
   "gpu_available": true/false,
-  "version": "2.2.1"
+  "version": "2.2.2"
 }
 ```
 
@@ -309,6 +316,28 @@ curl http://localhost:8000/health
 | ? High latency | Reduce batch size or use faster model |
 | ? Audio not working | Check microphone permissions in browser |
 | ? Too many files | Run `./cleanup_deprecated.sh` to remove old files |
+| **? PyTorch Symbol Error** | **Fixed in v2.2.2 - rebuild with latest code** |
+
+### PyTorch Symbol Error (RESOLVED in v2.2.2)
+If you encounter `OSError: undefined symbol _ZNK3c105Error4whatEv`:
+
+```bash
+# This error is now fixed in v2.2.2
+# Update to latest version:
+git pull origin main
+
+# Rebuild GPU image:
+docker-compose -f docker-compose.gpu.yml build --no-cache
+
+# Or use the quick start script:
+./quick_start.sh
+```
+
+**What was fixed:**
+- ? Switched to CUDA 12.1 (more stable than 12.4)
+- ? Exact PyTorch/torchaudio version match (2.4.1+cu121)
+- ? Added C++ ABI compatibility flags
+- ? Removed problematic dependencies causing conflicts
 
 ### Available Docker Configurations
 
@@ -434,7 +463,7 @@ curl http://localhost:8000/api/models
 
 ## Documentation
 
-- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.9 + Large-v3 guide
+- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.1 + Large-v3 guide
 - **Standard Setup Guide**: [SETUP.md](SETUP.md) - Detailed setup instructions
 - **Repository Cleanup**: [CLEANUP.md](CLEANUP.md) - File organization and cleanup guide
 - **Issue Tracker**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
@@ -495,6 +524,6 @@ For enterprise deployments and custom integrations, contact us through GitHub Is
 
 **Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
 
-**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.9 + Large-v3 model!**
+**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.1 + Large-v3 model!**
 
 **? Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
