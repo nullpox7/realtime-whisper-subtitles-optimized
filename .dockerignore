@@ -86,8 +86,13 @@ notebooks/
 # Scripts (already in container)
 scripts/
 
-# Configuration examples
-*.example
+# Configuration examples (excluding essential env files)
+config.example
+setup.example
+# Allow .env.example and .env.gpu.example files for Docker build
+!.env.example
+!.env.gpu.example
+!.env.cpu.example
 config/ssl/
 
 # Monitoring data
