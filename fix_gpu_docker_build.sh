@@ -1,12 +1,18 @@
 #!/bin/bash
 # Real-time Whisper Subtitles - GPU Docker Build Fix Script
-# Fix CUDA 12.9 build issues with stable CUDA 12.4 configuration
+# Fix memory double-free error and locale issues with stable CUDA 12.4 configuration
 # Encoding: UTF-8
 
 set -e
 
 echo "? GPU Docker Build Fix Script"
 echo "================================"
+echo ""
+echo "This script fixes:"
+echo "  ? free(): double free detected in tcache 2"
+echo "  ? setlocale: LC_ALL: cannot change locale"
+echo "  ? CUDA 12.4 compatibility issues"
+echo "  ? Memory management problems"
 echo ""
 
 # Colors for output
@@ -38,13 +44,13 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-log_info "Fixing GPU Docker build issues..."
+log_info "Fixing GPU Docker build issues and memory errors..."
 echo ""
 
 # Step 1: Stop any running containers
 log_info "Stopping any running containers..."
 docker-compose down || true
-docker-compose -f docker-compose.gpu.yml down || true
+docker-compose -f docker-compose.gpu.working.yml down || true
 
 # Step 2: Clean up Docker to prevent conflicts
 log_info "Cleaning up Docker cache..."
@@ -86,7 +92,7 @@ if [ ! -f .env ]; then
     else
         log_info "Creating basic GPU environment..."
         cat > .env << 'EOF'
-# Real-time Whisper Subtitles - GPU Configuration (Fixed)
+# Real-time Whisper Subtitles - GPU Configuration (Memory Error Fixed)
 HOST=0.0.0.0
 PORT=8000
 DEBUG=false
@@ -110,6 +116,10 @@ CUDA_MEMORY_FRACTION=0.85
 # Features
 ENABLE_WORD_TIMESTAMPS=true
 VAD_FILTER=true
+
+# Memory error prevention
+NUMBA_DISABLE_JIT=1
+NUMBA_THREADING_LAYER=safe
 EOF
         log_success "Created basic GPU environment configuration"
     fi
@@ -117,90 +127,23 @@ else
     log_info "Environment file already exists"
 fi
 
-# Step 7: Build the working GPU image
-log_info "Building GPU Docker image with stable CUDA 12.4..."
-log_info "This uses proven compatible versions and should build successfully"
+# Step 7: Build the working GPU image with memory fixes
+log_info "Building GPU Docker image with memory error fixes..."
+log_info "This uses memory-safe versions and should build successfully"
 echo ""
 
 if docker-compose -f docker-compose.gpu.working.yml build --no-cache whisper-subtitles-gpu; then
     log_success "? GPU Docker image built successfully!"
 else
-    log_error "GPU build failed. Trying fallback method..."
-    
-    # Fallback: Try with less aggressive optimization
-    log_info "Attempting fallback build with minimal dependencies..."
-    
-    # Create minimal Dockerfile for emergency fallback
-    cat > Dockerfile.gpu.minimal << 'EOF'
-# Minimal GPU Dockerfile for emergency fallback
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
-
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-
-# Install minimal dependencies
-RUN apt-get update && apt-get install -y \
-    python3 python3-pip python3-dev \
-    curl git build-essential ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create app user
-RUN useradd -m -u 1000 appuser
-
-WORKDIR /app
-
-# Install minimal Python requirements
-RUN pip3 install --no-cache-dir \
-    fastapi==0.109.2 \
-    uvicorn[standard]==0.27.1 \
-    websockets==12.0 \
-    jinja2==3.1.3 \
-    torch==2.4.1+cu124 \
-    torchaudio==2.4.1+cu124 \
-    faster-whisper==1.0.1 \
-    librosa==0.10.1 \
-    soundfile==0.12.1 \
-    numpy==1.24.4 \
-    --index-url https://download.pytorch.org/whl/cu124
-
-# Create directories and copy files
-RUN mkdir -p /app/data/{models,outputs,logs,cache} && \
-    chown -R appuser:appuser /app
-
-COPY src/ ./src/
-COPY static/ ./static/
-COPY templates/ ./templates/
-
-RUN chown -R appuser:appuser /app
-
-USER appuser
-
-EXPOSE 8000
-
-ENV WHISPER_MODEL=base
-ENV DEVICE=cuda
-ENV COMPUTE_TYPE=float16
-
-CMD ["python3", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000"]
-EOF
-
-    if docker build -f Dockerfile.gpu.minimal -t whisper-gpu-minimal .; then
-        log_success "? Minimal GPU image built successfully!"
-        
-        # Update compose file to use minimal image
-        sed -i 's/dockerfile: Dockerfile.gpu.working/dockerfile: Dockerfile.gpu.minimal/' docker-compose.gpu.working.yml
-        
-    else
-        log_error "? Both main and fallback builds failed"
-        echo ""
-        log_info "Troubleshooting suggestions:"
-        echo "1. Check CUDA driver version: nvidia-smi"
-        echo "2. Check Docker GPU support: docker run --rm --gpus all nvidia/cuda:12.4.1-runtime-ubuntu22.04 nvidia-smi"
-        echo "3. Install NVIDIA Container Toolkit: sudo apt install nvidia-container-toolkit"
-        echo "4. Restart Docker daemon: sudo systemctl restart docker"
-        echo "5. Try CPU-only version: docker-compose up -d"
-        exit 1
-    fi
+    log_error "GPU build failed. This may indicate deeper system issues."
+    echo ""
+    log_info "Troubleshooting suggestions:"
+    echo "1. Check CUDA driver version: nvidia-smi"
+    echo "2. Check Docker GPU support: docker run --rm --gpus all nvidia/cuda:12.4.1-runtime-ubuntu22.04 nvidia-smi"
+    echo "3. Install NVIDIA Container Toolkit: sudo apt install nvidia-container-toolkit"
+    echo "4. Restart Docker daemon: sudo systemctl restart docker"
+    echo "5. Try CPU-only version: docker-compose up -d"
+    exit 1
 fi
 
 # Step 8: Start the application
@@ -226,22 +169,22 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             version=$(echo "$health_data" | jq -r '.version' 2>/dev/null || echo "2.2.1")
             
             echo ""
-            log_success "? GPU Docker Build Fix Completed Successfully!"
+            log_success "? GPU Memory Error Fix Completed Successfully!"
             echo "=================================================="
             echo ""
             echo "? Application Status:"
             echo "  ? URL: http://localhost:8000"
             echo "  ? Status: $status"
-            echo "  ??  Version: $version"
+            echo "  ? Version: $version"
             echo "  ? GPU Available: $gpu_available"
             echo "  ? Model Loaded: $model_loaded"
             echo ""
-            echo "? What Was Fixed:"
-            echo "  ? CUDA 12.9 ? CUDA 12.4 (stable version)"
-            echo "  ? Python 3.11 installation issues resolved"
-            echo "  ? Package dependency conflicts fixed"
-            echo "  ? PyTorch CUDA compatibility ensured"
-            echo "  ? GPU memory optimization configured"
+            echo "? Issues Fixed:"
+            echo "  ? Memory double-free error (free(): double free detected)"
+            echo "  ? Locale issues (setlocale: LC_ALL)"
+            echo "  ? Numba JIT compilation problems"
+            echo "  ? CUDA library conflicts"
+            echo "  ? Package dependency conflicts"
             echo ""
             echo "? GPU Features Enabled:"
             echo "  ? CUDA acceleration for faster-whisper"
@@ -254,12 +197,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "  ? Web Interface: http://localhost:8000"
             echo "  ??  Press F for fullscreen mode"
             echo "  ? Select microphone device"
-            echo "  ? Click Start Recording"
+            echo "  ??  Click Start Recording"
             echo ""
             echo "??  Management Commands:"
             echo "  ? View logs: docker-compose -f docker-compose.gpu.working.yml logs -f"
             echo "  ? Restart: docker-compose -f docker-compose.gpu.working.yml restart"
-            echo "  ? Stop: docker-compose -f docker-compose.gpu.working.yml down"
+            echo "  ?? Stop: docker-compose -f docker-compose.gpu.working.yml down"
             echo "  ? GPU monitoring: watch -n 1 nvidia-smi"
             echo ""
             
@@ -288,7 +231,7 @@ echo "1. ? Enable Monitoring (Prometheus + Grafana):"
 echo "   docker-compose -f docker-compose.gpu.working.yml --profile monitoring up -d"
 echo "   Access Grafana: http://localhost:3000 (admin/admin)"
 echo ""
-echo "2. ? Performance Tuning:"
+echo "2. ?? Performance Tuning:"
 echo "   Edit .env file to adjust CUDA_MEMORY_FRACTION, BEAM_SIZE, etc."
 echo ""
 echo "3. ? Model Selection:"
@@ -307,14 +250,14 @@ if command -v nvidia-smi >/dev/null 2>&1; then
     echo "  ? CUDA Version: $(nvidia-smi | grep "CUDA Version" | awk '{print $9}' 2>/dev/null || echo 'Unknown')"
 fi
 echo "  ? Docker Version: $(docker --version | cut -d' ' -f3 | cut -d',' -f1 2>/dev/null || echo 'Unknown')"
-echo "  ? Build Method: CUDA 12.4 + Working Dependencies"
+echo "  ? Build Method: CUDA 12.4 + Memory-Safe Dependencies"
 echo ""
 
-log_success "? GPU Docker Build Fix completed successfully!"
+log_success "? GPU Memory Error Fix completed successfully!"
 echo ""
 echo "? For more information:"
 echo "  ? Documentation: README_GPU.md"
 echo "  ? Issues: https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues"
 echo "  ? Discussions: https://github.com/nullpox7/realtime-whisper-subtitles-optimized/discussions"
 echo ""
-echo "? Enjoy high-accuracy GPU-accelerated real-time speech recognition!"
+echo "? Enjoy high-accuracy GPU-accelerated real-time speech recognition without memory errors!"
