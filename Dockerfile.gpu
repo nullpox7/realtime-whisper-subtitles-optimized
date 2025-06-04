@@ -1,10 +1,9 @@
-# Real-time Whisper Subtitles - GPU Optimized Dockerfile (v2.2.0)
-# NVIDIA CUDA 12.9 + cuDNN optimized for large-v3 model maximum accuracy
+# Real-time Whisper Subtitles - GPU Dockerfile (Memory Error Fixed)
+# CUDA 12.4 + PyTorch stable configuration - double free error resolved
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-# Use CUDA 12.9 with cuDNN development version from NVIDIA NGC
-FROM nvidia/cuda:12.9.0-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,38 +13,61 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
-# CUDA 12.9 and GPU optimization environment variables
+# Memory error prevention - CRITICAL: Disable ALL JIT compilation
+ENV NUMBA_DISABLE_JIT=1
+ENV NUMBA_CACHE_DIR=/dev/null
+ENV NUMBA_THREADING_LAYER=workqueue
+ENV NUMBA_PARALLEL=0
+
+# CUDA 12.4 optimization settings
 ENV CUDA_VISIBLE_DEVICES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV CUDA_CACHE_PATH=/tmp/cuda_cache
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
 
-# Numba optimization for GPU (enable JIT with proper caching)
-ENV NUMBA_DISABLE_JIT=0
-ENV NUMBA_CACHE_DIR=/tmp/numba_cache
-ENV NUMBA_THREADING_LAYER=workqueue
-ENV NUMBA_PARALLEL=1
+# Memory allocator stabilization
+ENV MALLOC_TRIM_THRESHOLD_=131072
+ENV MALLOC_MMAP_THRESHOLD_=131072
+ENV MALLOC_MMAP_MAX_=65536
 
-# CUDA 12.9 specific optimizations
+# PyTorch CUDA settings
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+ENV CUDA_MEMORY_FRACTION=0.85
 ENV CUDA_MODULE_LOADING=LAZY
-ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 ENV TORCH_CUDNN_V8_API_ENABLED=1
 
-# Install system dependencies
+# Locale settings
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Asia/Tokyo
+
+# Update package lists and install essential packages
 RUN apt-get update && apt-get install -y \
-    # Build tools
-    build-essential \
-    cmake \
-    git \
+    software-properties-common \
     curl \
     wget \
-    pkg-config \
-    # Python 3.11
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add deadsnakes PPA for Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update
+
+# Install Python 3.11 and essential tools
+RUN apt-get install -y \
     python3.11 \
     python3.11-dev \
+    python3.11-distutils \
     python3-pip \
-    # Audio processing
+    build-essential \
+    git \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install audio processing libraries (minimal set)
+RUN apt-get update && apt-get install -y \
     ffmpeg \
     libavcodec-dev \
     libavformat-dev \
@@ -53,21 +75,20 @@ RUN apt-get update && apt-get install -y \
     libswscale-dev \
     libswresample-dev \
     libasound2-dev \
-    portaudio19-dev \
-    libportaudio2 \
-    libportaudiocpp0 \
-    libpulse-dev \
-    # Additional tools
-    htop \
-    nvtop \
-    # CUDA toolkit components
-    libnccl2 \
-    libnccl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symbolic link for python
-RUN ln -s /usr/bin/python3.11 /usr/bin/python3 && \
-    ln -s /usr/bin/python3.11 /usr/bin/python
+# Install optional packages with error handling
+RUN apt-get update && apt-get install -y \
+    htop \
+    && apt-get install -y nvtop || echo "nvtop not available, skipping..." \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for python
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+# Install pip for Python 3.11
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
 
 # Create app user for security
 RUN groupadd -r appuser && useradd -r -g appuser -s /bin/bash appuser
@@ -79,13 +100,13 @@ WORKDIR /app
 COPY requirements.gpu.txt .
 
 # Upgrade pip and install wheel
-RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
-# Install PyTorch with CUDA 12.4 support (latest stable for CUDA 12.x)
-RUN python3 -m pip install torch==2.4.1+cu124 torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+# Install PyTorch with CUDA 12.4 support (stable version)
+RUN python3.11 -m pip install torch==2.4.1+cu124 torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
 
-# Install other Python dependencies
-RUN python3 -m pip install --no-cache-dir -r requirements.gpu.txt
+# Install other Python dependencies (memory-safe versions)
+RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.txt
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data/{models,outputs,logs,cache} \
@@ -95,15 +116,12 @@ RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/config \
     && mkdir -p /app/logs \
     && mkdir -p /tmp/cuda_cache \
-    && mkdir -p /tmp/numba_cache \
     && mkdir -p /home/appuser/.cache \
     && mkdir -p /home/appuser/.torch \
     && chown -R appuser:appuser /app \
     && chown -R appuser:appuser /home/appuser \
     && chown -R appuser:appuser /tmp/cuda_cache \
-    && chown -R appuser:appuser /tmp/numba_cache \
     && chmod -R 755 /tmp/cuda_cache \
-    && chmod -R 755 /tmp/numba_cache \
     && chmod -R 755 /home/appuser
 
 # Copy application files
@@ -111,8 +129,8 @@ COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
 
-# Copy .env.gpu.example if it exists
-COPY .env.gpu.example* ./
+# Copy environment examples
+COPY .env.gpu.example .env.example
 
 # Set final permissions
 RUN chown -R appuser:appuser /app
@@ -133,7 +151,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=60s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set default environment variables optimized for CUDA 12.9 and large-v3
+# Set default environment variables optimized for CUDA 12.4 and large models
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WHISPER_MODEL=large-v3
@@ -148,9 +166,5 @@ ENV VAD_FILTER=true
 ENV BATCH_SIZE=16
 ENV MAX_WORKERS=4
 
-# CUDA 12.9 specific memory optimizations
-ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-ENV CUDA_MEMORY_FRACTION=0.85
-
-# Default command optimized for CUDA 12.9
-CMD ["python3", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Default command
+CMD ["python3.11", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

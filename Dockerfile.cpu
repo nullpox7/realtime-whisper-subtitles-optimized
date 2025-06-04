@@ -1,5 +1,8 @@
-# CPU-only Dockerfile for systems without GPU
-# For development and testing on systems without NVIDIA GPU
+# Real-time Whisper Subtitles - CPU Dockerfile (Optimized)
+# CPU-only version for systems without GPU
+# Author: Real-time Whisper Subtitles Team
+# Encoding: UTF-8
+
 FROM python:3.11-slim-bullseye
 
 # Set environment variables
@@ -8,6 +11,22 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV LOG_PATH=/app/data/logs
+
+# CPU optimization settings - No JIT compilation for stability
+ENV NUMBA_DISABLE_JIT=1
+ENV NUMBA_CACHE_DIR=/dev/null
+ENV NUMBA_THREADING_LAYER=workqueue
+ENV NUMBA_PARALLEL=0
+
+# Memory allocator settings
+ENV MALLOC_TRIM_THRESHOLD_=131072
+ENV MALLOC_MMAP_THRESHOLD_=131072
+
+# Locale settings
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Asia/Tokyo
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -40,38 +59,48 @@ RUN groupadd -r appuser && useradd -r -g appuser -s /bin/bash appuser
 # Set working directory
 WORKDIR /app
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy requirements file first for better caching
+COPY requirements.cpu.txt .
+
+# Upgrade pip
+RUN pip3 install --upgrade pip setuptools wheel
 
 # Install PyTorch CPU version
-RUN pip3 install --upgrade pip setuptools wheel
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install torch==2.4.1+cpu torchaudio==2.4.1+cpu --index-url https://download.pytorch.org/whl/cpu
 
 # Install other Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.cpu.txt
 
-# Create necessary directories
+# Create necessary directories with proper permissions
 RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/static \
     && mkdir -p /app/templates \
     && mkdir -p /app/src \
-    && mkdir -p /app/config
+    && mkdir -p /app/config \
+    && mkdir -p /app/logs \
+    && mkdir -p /home/appuser/.cache \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /home/appuser \
+    && chmod -R 755 /home/appuser
 
 # Copy application files
 COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
-COPY .env.example ./
 
-# Set proper permissions
+# Copy environment examples
+COPY .env.cpu.example .env.example
+
+# Set final permissions
 RUN chown -R appuser:appuser /app
-RUN chmod +x /app/src/*.py
 
 # Switch to non-root user
 USER appuser
 
-# Create data directories with proper permissions
-RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache}
+# Create user-specific data directories
+RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
+    && mkdir -p /app/logs \
+    && mkdir -p /home/appuser/.cache
 
 # Expose port
 EXPOSE 8000
@@ -80,12 +109,20 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set default environment variables
+# Set default environment variables optimized for CPU
 ENV HOST=0.0.0.0
 ENV PORT=8000
-ENV WHISPER_MODEL=tiny
-ENV LANGUAGE=ja
+ENV WHISPER_MODEL=base
+ENV LANGUAGE=auto
 ENV DEVICE=cpu
+ENV COMPUTE_TYPE=int8
+ENV BEAM_SIZE=1
+ENV TEMPERATURE=0.0
+ENV BEST_OF=1
+ENV ENABLE_WORD_TIMESTAMPS=false
+ENV VAD_FILTER=true
+ENV BATCH_SIZE=4
+ENV MAX_WORKERS=2
 
 # Default command
 CMD ["python3", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
