@@ -1,4 +1,4 @@
-# Real-time Whisper Subtitles - Stream Edition (v2.2.0)
+# Real-time Whisper Subtitles - Stream Edition (v2.2.1)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
@@ -18,11 +18,17 @@ OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with strea
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
-[? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh)
+[? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh) | [? **CUDA Fix Tool**](fix_cuda_image.sh)
 
-## Latest Updates - v2.2.0 (2025-06-03) - GPU Edition
+## Latest Updates - v2.2.1 (2025-06-04) - CUDA Compatibility Fixed
 
-**NEW: CUDA 12.9 + LARGE-V3 MODEL SUPPORT**
+**NEW: CUDA COMPATIBILITY FIX + AUTO-DETECTION**
+
+### ? CUDA Image Compatibility
+- **Auto CUDA Detection**: Automatically finds compatible CUDA images
+- **Multiple CUDA Support**: CUDA 12.9, 12.4, 12.2, 12.1 compatibility
+- **Smart Fallback**: Graceful fallback to stable versions
+- **One-Click Fix**: `./fix_cuda_image.sh` for automatic resolution
 
 ### ? GPU Edition Features
 - **CUDA 12.9 Optimization**: Latest NVIDIA GPU acceleration
@@ -38,11 +44,11 @@ OpenAI Whisper + CUDA 12.9 + Large-v3 model optimized Web application with strea
 - **Keyboard Shortcuts**: F for fullscreen, Space for record toggle, C for clear
 - **Streaming UI**: Clean, minimal interface optimized for broadcasters
 
-### ? Technical Improvements
+### ?? Technical Improvements
 - **Energy-based Speech Detection**: Reliable without external dependencies
 - **UTF-8 Encoding Fixed**: Complete English UI eliminates encoding issues
 - **Simplified Audio Processing**: Direct microphone input with device selection
-- **CUDA 12.9 Support**: Latest GPU acceleration technology
+- **CUDA Auto-Compatibility**: Automatic CUDA version detection and optimization
 
 ### Quick Start Options
 
@@ -61,6 +67,18 @@ cp .env.gpu.example .env
 docker-compose -f docker-compose.gpu.yml up -d
 
 # Access at http://localhost:8000
+```
+
+#### ? CUDA Image Issues? (Auto-Fix)
+```bash
+# If you encounter CUDA image not found errors:
+chmod +x fix_cuda_image.sh
+./fix_cuda_image.sh
+
+# This will automatically:
+# - Detect available CUDA images
+# - Create compatible Dockerfile
+# - Build and start the application
 ```
 
 #### ? Standard Edition
@@ -118,7 +136,7 @@ docker-compose up -d
 ### GPU Edition (Recommended)
 - **GPU**: NVIDIA RTX 3060 / RTX 4060 or better
 - **VRAM**: 6GB+ (8GB+ recommended for large-v3)
-- **CUDA**: 12.9+ with compatible drivers
+- **CUDA**: 12.1+ with compatible drivers (auto-detected)
 - **RAM**: 16GB+ (32GB recommended)
 - **CPU**: 6+ cores
 - **Expected RTF**: 0.15-0.45x (faster than real-time)
@@ -136,30 +154,6 @@ docker-compose up -d
 - **Model**: tiny, base, or small recommended
 - **Expected RTF**: 2-8x (slower than real-time)
 
-## Streaming Setup Guide
-
-### For OBS Studio
-1. Start the application: `docker-compose up -d` or GPU version
-2. Open http://localhost:8000
-3. Select your microphone device
-4. Choose language and model (large-v3 for best quality)
-5. Click fullscreen button or press F
-6. In OBS: Add Browser Source with URL: `http://localhost:8000` (fullscreen mode)
-7. Set source to fullscreen, enable CSS: `body { margin: 0; }`
-
-### For Other Streaming Software
-- **Fullscreen URL**: http://localhost:8000 (press F for fullscreen)
-- **Resolution**: Any (responsive)
-- **Background**: Black (#000000)
-- **Text Color**: White (#FFFFFF) with shadow
-- **Refresh Rate**: Real-time via WebSocket
-
-### Keyboard Shortcuts
-- **F**: Toggle fullscreen subtitle display
-- **Space**: Start/stop recording
-- **C**: Clear current subtitle
-- **Escape**: Exit fullscreen mode
-
 ## Installation
 
 ### GPU Edition Setup (Recommended)
@@ -169,9 +163,9 @@ git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
 
 # 2. Check GPU compatibility
-nvidia-smi  # Should show CUDA 12.9+ support
+nvidia-smi  # Should show CUDA support
 
-# 3. Automated setup
+# 3. Automated setup (includes CUDA auto-detection)
 chmod +x setup_gpu.sh
 ./setup_gpu.sh
 
@@ -198,6 +192,74 @@ docker-compose up -d
 # 5. Access application
 open http://localhost:8000
 ```
+
+## Troubleshooting
+
+### ? CUDA Image Issues (New!)
+```bash
+# If you see "nvidia/cuda:12.9.0-cudnn-devel-ubuntu22.04 image not found":
+chmod +x fix_cuda_image.sh
+./fix_cuda_image.sh
+
+# This automatically:
+# - Detects available CUDA images (12.9, 12.4, 12.2, 12.1)
+# - Creates compatible Dockerfile.gpu.fixed
+# - Updates docker-compose configuration
+# - Builds and starts the application
+```
+
+### Quick Fix Scripts
+```bash
+# General issues
+curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_complete.sh
+chmod +x quick_fix_complete.sh
+./quick_fix_complete.sh
+
+# GPU specific issues (if using GPU edition)
+curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_gpu.sh
+chmod +x quick_fix_gpu.sh
+./quick_fix_gpu.sh
+
+# CUDA compatibility issues (new!)
+curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/fix_cuda_image.sh
+chmod +x fix_cuda_image.sh
+./fix_cuda_image.sh
+```
+
+### Health Check
+```bash
+# Check application status
+curl http://localhost:8000/health
+
+# Should return:
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "gpu_available": true/false,
+  "version": "2.2.1",
+  "model_name": "large-v3"  // if using GPU edition
+}
+```
+
+### Common Issues and Solutions
+
+| Issue | Solution |
+|-------|----------|
+| ? CUDA image not found | Run `./fix_cuda_image.sh` |
+| ? GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
+| ? Model loading slow | Use smaller model (base/small) or check VRAM |
+| ? High latency | Reduce batch size or use faster model |
+| ? Audio not working | Check microphone permissions in browser |
+
+## Available Dockerfiles
+
+| Dockerfile | CUDA Version | Best For |
+|------------|--------------|----------|
+| `Dockerfile.gpu` | 12.9 | Latest features, RTX 40xx |
+| `Dockerfile.gpu.stable` | 12.4 | Production stability |
+| `Dockerfile.gpu.fixed` | Auto-detected | Universal compatibility |
+| `Dockerfile` | Auto (CPU/GPU) | Standard deployment |
+| `Dockerfile.cpu` | N/A | CPU-only systems |
 
 ## Configuration
 
@@ -244,35 +306,29 @@ curl http://localhost:8000/api/languages
 curl http://localhost:8000/api/models
 ```
 
-## Troubleshooting
+## Streaming Setup Guide
 
-### Quick Fix Scripts
-```bash
-# General issues
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_complete.sh
-chmod +x quick_fix_complete.sh
-./quick_fix_complete.sh
+### For OBS Studio
+1. Start the application: `docker-compose up -d` or GPU version
+2. Open http://localhost:8000
+3. Select your microphone device
+4. Choose language and model (large-v3 for best quality)
+5. Click fullscreen button or press F
+6. In OBS: Add Browser Source with URL: `http://localhost:8000` (fullscreen mode)
+7. Set source to fullscreen, enable CSS: `body { margin: 0; }`
 
-# GPU specific issues (if using GPU edition)
-curl -O https://raw.githubusercontent.com/nullpox7/realtime-whisper-subtitles-optimized/main/quick_fix_gpu.sh
-chmod +x quick_fix_gpu.sh
-./quick_fix_gpu.sh
-```
+### For Other Streaming Software
+- **Fullscreen URL**: http://localhost:8000 (press F for fullscreen)
+- **Resolution**: Any (responsive)
+- **Background**: Black (#000000)
+- **Text Color**: White (#FFFFFF) with shadow
+- **Refresh Rate**: Real-time via WebSocket
 
-### Health Check
-```bash
-# Check application status
-curl http://localhost:8000/health
-
-# Should return:
-{
-  "status": "healthy",
-  "model_loaded": true,
-  "gpu_available": true/false,
-  "version": "2.2.0",
-  "model_name": "large-v3"  // if using GPU edition
-}
-```
+### Keyboard Shortcuts
+- **F**: Toggle fullscreen subtitle display
+- **Space**: Start/stop recording
+- **C**: Clear current subtitle
+- **Escape**: Exit fullscreen mode
 
 ## Stream Integration Examples
 
@@ -322,6 +378,7 @@ curl http://localhost:8000/health
 
 - **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.9 + Large-v3 guide
 - **Quick Start Guide**: [SETUP.md](SETUP.md) - Standard setup instructions
+- **CUDA Fix Tool**: [fix_cuda_image.sh](fix_cuda_image.sh) - Automatic CUDA compatibility
 - **Issue Tracker**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/discussions)
 
@@ -381,3 +438,5 @@ For enterprise deployments and custom integrations, contact us through GitHub Is
 **Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
 
 **? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.9 + Large-v3 model!**
+
+**? Having CUDA issues? Use our [Auto-Fix Tool](fix_cuda_image.sh) for instant resolution!**
