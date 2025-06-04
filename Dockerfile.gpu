@@ -1,9 +1,10 @@
 # Real-time Whisper Subtitles - GPU Optimized Dockerfile (v2.2.0)
-# NVIDIA CUDA 12.9 + cuDNN optimized for large-v3 model maximum accuracy
+# NVIDIA CUDA 12.8 + cuDNN optimized for large-v3 model maximum accuracy
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-FROM nvidia/cuda:12.9-devel-ubuntu22.04
+# Use CUDA 12.8 (latest available) with explicit DockerHub reference
+FROM docker.io/nvidia/cuda:12.6-devel-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,7 +14,7 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
-# CUDA 12.9 and GPU optimization environment variables
+# CUDA 12.6+ and GPU optimization environment variables
 ENV CUDA_VISIBLE_DEVICES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -26,7 +27,7 @@ ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 ENV NUMBA_THREADING_LAYER=workqueue
 ENV NUMBA_PARALLEL=1
 
-# CUDA 12.9 specific optimizations
+# CUDA 12.6+ specific optimizations
 ENV CUDA_MODULE_LOADING=LAZY
 ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 ENV TORCH_CUDNN_V8_API_ENABLED=1
@@ -80,8 +81,8 @@ COPY requirements.gpu.txt .
 # Upgrade pip and install wheel
 RUN python3 -m pip install --upgrade pip setuptools wheel
 
-# Install PyTorch with CUDA 12.9 support (latest versions)
-RUN python3 -m pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --index-url https://download.pytorch.org/whl/cu121
+# Install PyTorch with CUDA 12.1 support (stable and widely compatible)
+RUN python3 -m pip install torch==2.4.0+cu121 torchaudio==2.4.0+cu121 --index-url https://download.pytorch.org/whl/cu121
 
 # Install other Python dependencies
 RUN python3 -m pip install --no-cache-dir -r requirements.gpu.txt
@@ -132,7 +133,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=60s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set default environment variables optimized for CUDA 12.9 and large-v3
+# Set default environment variables optimized for CUDA 12.6+ and large-v3
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WHISPER_MODEL=large-v3
@@ -147,9 +148,9 @@ ENV VAD_FILTER=true
 ENV BATCH_SIZE=16
 ENV MAX_WORKERS=4
 
-# CUDA 12.9 specific memory optimizations
+# CUDA 12.6+ specific memory optimizations
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 ENV CUDA_MEMORY_FRACTION=0.85
 
-# Default command optimized for CUDA 12.9
+# Default command optimized for CUDA 12.6+
 CMD ["python3", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
