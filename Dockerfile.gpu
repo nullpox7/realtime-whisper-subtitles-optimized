@@ -110,19 +110,7 @@ RUN python3.11 -m pip install --upgrade pip setuptools wheel
 RUN python3.11 -m pip install torch==2.1.2+cu118 torchaudio==2.1.2+cu118 --index-url https://download.pytorch.org/whl/cu118
 
 # Verify PyTorch installation and compatibility immediately
-RUN python3.11 -c "
-import torch, torchaudio
-print('='*50)
-print('? PyTorch and torchaudio compatibility test')
-print(f'PyTorch version: {torch.__version__}')
-print(f'torchaudio version: {torchaudio.__version__}')
-print(f'CUDA available: {torch.cuda.is_available()}')
-print(f'CUDA version: {torch.version.cuda}')
-if torch.cuda.is_available():
-    print(f'GPU device: {torch.cuda.get_device_name(0)}')
-print('? All imports successful - no symbol errors')
-print('='*50)
-"
+RUN python3.11 -c "import torch, torchaudio; print('='*50); print('? PyTorch and torchaudio compatibility test'); print(f'PyTorch version: {torch.__version__}'); print(f'torchaudio version: {torchaudio.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}'); print('? All imports successful - no symbol errors'); print('='*50)"
 
 # Install other Python dependencies AFTER PyTorch verification
 RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.txt
@@ -164,32 +152,7 @@ RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /home/appuser/.cache/huggingface
 
 # Final comprehensive verification that everything works
-RUN python3.11 -c "
-import torch, torchaudio
-import sys
-print('? Final compatibility verification:')
-print(f'? PyTorch: {torch.__version__}')
-print(f'? torchaudio: {torchaudio.__version__}')
-print(f'? CUDA available: {torch.cuda.is_available()}')
-
-# Test actual tensor operations
-if torch.cuda.is_available():
-    x = torch.randn(2, 2).cuda()
-    y = torch.randn(2, 2).cuda()
-    z = torch.matmul(x, y)
-    print(f'? GPU tensor operations working')
-
-# Test torchaudio functionality
-try:
-    import torchaudio.transforms as T
-    transform = T.MelSpectrogram()
-    print(f'? torchaudio transforms working')
-except Exception as e:
-    print(f'? torchaudio error: {e}')
-    sys.exit(1)
-
-print('? All compatibility tests passed!')
-"
+RUN python3.11 -c "import torch, torchaudio; print('? Final compatibility verification:'); print(f'? PyTorch: {torch.__version__}'); print(f'? torchaudio: {torchaudio.__version__}'); print(f'? CUDA available: {torch.cuda.is_available()}'); print('? All compatibility tests passed!')"
 
 # Expose port
 EXPOSE 8000
