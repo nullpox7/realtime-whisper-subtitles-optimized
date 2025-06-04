@@ -1,0 +1,181 @@
+# Real-time Whisper Subtitles - GPU Optimized Dockerfile (Fixed Dependencies)
+# NVIDIA CUDA with proper Ubuntu 22.04 package management
+# Author: Real-time Whisper Subtitles Team
+# Encoding: UTF-8
+
+# Use CUDA 12.4 with cuDNN development version (most stable and compatible)
+FROM nvidia/cuda:12.4.0-cudnn-devel-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV LOG_PATH=/app/data/logs
+
+# CUDA and GPU optimization environment variables
+ENV CUDA_VISIBLE_DEVICES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV CUDA_CACHE_PATH=/tmp/cuda_cache
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
+
+# Numba optimization for GPU
+ENV NUMBA_DISABLE_JIT=0
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV NUMBA_THREADING_LAYER=workqueue
+ENV NUMBA_PARALLEL=1
+
+# CUDA specific optimizations
+ENV CUDA_MODULE_LOADING=LAZY
+ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
+ENV TORCH_CUDNN_V8_API_ENABLED=1
+
+# Update package lists and install dependencies in stages for better error handling
+RUN apt-get update && apt-get upgrade -y
+
+# Install basic build tools first
+RUN apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    wget \
+    pkg-config \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    software-properties-common
+
+# Add deadsnakes PPA for Python 3.11 (Ubuntu 22.04 doesn't have Python 3.11 by default)
+RUN add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update
+
+# Install Python 3.11 and development tools
+RUN apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3.11-distutils \
+    python3-pip \
+    python3.11-venv
+
+# Install audio processing libraries
+RUN apt-get install -y \
+    ffmpeg \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libasound2-dev \
+    portaudio19-dev \
+    libportaudio2 \
+    libportaudiocpp0 \
+    libpulse-dev
+
+# Install system monitoring tools
+RUN apt-get install -y \
+    htop \
+    nvtop || apt-get install -y htop
+
+# Install NCCL (NVIDIA Collective Communication Library) - may not be available in all repos
+RUN apt-get install -y \
+    libnccl2 \
+    libnccl-dev || echo "NCCL not available, skipping..."
+
+# Clean up apt cache
+RUN rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for python (ensure python3.11 is default)
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+# Install pip for Python 3.11
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+
+# Create app user for security
+RUN groupadd -r appuser && useradd -r -g appuser -s /bin/bash appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements file first for better caching
+COPY requirements.gpu.txt .
+
+# Upgrade pip and install wheel
+RUN python3.11 -m pip install --upgrade pip setuptools wheel
+
+# Install PyTorch with CUDA 12.4 support
+RUN python3.11 -m pip install torch==2.4.1+cu124 torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+
+# Install other Python dependencies
+RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.txt
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data/{models,outputs,logs,cache} \
+    && mkdir -p /app/static \
+    && mkdir -p /app/templates \
+    && mkdir -p /app/src \
+    && mkdir -p /app/config \
+    && mkdir -p /app/logs \
+    && mkdir -p /tmp/cuda_cache \
+    && mkdir -p /tmp/numba_cache \
+    && mkdir -p /home/appuser/.cache \
+    && mkdir -p /home/appuser/.torch \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /home/appuser \
+    && chown -R appuser:appuser /tmp/cuda_cache \
+    && chown -R appuser:appuser /tmp/numba_cache \
+    && chmod -R 755 /tmp/cuda_cache \
+    && chmod -R 755 /tmp/numba_cache \
+    && chmod -R 755 /home/appuser
+
+# Copy application files
+COPY src/ ./src/
+COPY static/ ./static/
+COPY templates/ ./templates/
+
+# Copy .env.gpu.example if it exists
+COPY .env.gpu.example* ./
+
+# Set final permissions
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Create user-specific data directories
+RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
+    && mkdir -p /app/logs \
+    && mkdir -p /home/appuser/.cache/torch \
+    && mkdir -p /home/appuser/.cache/huggingface
+
+# Expose port
+EXPOSE 8000
+
+# Health check with longer timeout for GPU initialization
+HEALTHCHECK --interval=30s --timeout=60s --start-period=180s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Set default environment variables optimized for CUDA 12.4 and large-v3
+ENV HOST=0.0.0.0
+ENV PORT=8000
+ENV WHISPER_MODEL=large-v3
+ENV LANGUAGE=auto
+ENV DEVICE=cuda
+ENV COMPUTE_TYPE=float16
+ENV BEAM_SIZE=5
+ENV TEMPERATURE=0.0
+ENV BEST_OF=5
+ENV ENABLE_WORD_TIMESTAMPS=true
+ENV VAD_FILTER=true
+ENV BATCH_SIZE=16
+ENV MAX_WORKERS=4
+
+# CUDA memory optimizations
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+ENV CUDA_MEMORY_FRACTION=0.85
+
+# Default command
+CMD ["python3.11", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
