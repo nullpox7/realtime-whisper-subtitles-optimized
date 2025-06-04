@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - GPU Optimized Dependencies (v2.2.1)
-# CUDA 12.4+ cuDNN optimized for large-v3 model maximum accuracy
+# Real-time Whisper Subtitles - GPU Optimized Dependencies (v2.2.2)
+# CUDA 12.4+ PyTorch/torchaudio compatibility fixed - OSError symbol error resolved
 # Encoding: UTF-8
 
 # Web Framework (essential)
@@ -9,25 +9,23 @@ websockets==12.0
 jinja2==3.1.4
 python-multipart==0.0.9
 
-# PyTorch with CUDA 12.4 support (installed separately in Dockerfile)
-# torch==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
-# torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+# PyTorch with CUDA 12.4 support - EXACT VERSION MATCH REQUIRED
+# These will be installed separately in Dockerfile to ensure compatibility
+# torch==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121
+# torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121
 
-# Core AI/ML (GPU optimized versions)
+# Core AI/ML (compatible versions with PyTorch 2.4.1)
 faster-whisper==1.0.3
 transformers==4.42.3
 accelerate==0.32.1
 
-# Audio Processing (high-quality, compatible)
+# Audio Processing (high-quality, stable versions)
 librosa==0.10.2
 soundfile==0.12.1
 
-# Scientific Computing - GPU optimized and stable versions
-numpy>=1.24.0,<2.0.0
+# Scientific Computing - stable versions compatible with PyTorch 2.4.1
+numpy>=1.24.0,<1.27.0
 scipy==1.13.1
-
-# CUDA optimization libraries for CUDA 12.4
-cupy-cuda12x==13.2.0
 
 # Redis client for caching and performance
 redis==5.0.7
@@ -64,41 +62,37 @@ pyyaml==6.0.1
 # Memory optimization
 pympler==0.9
 
-# Additional ML/Audio dependencies optimized for GPU
+# Additional ML/Audio dependencies compatible with PyTorch 2.4.1
 resampy==0.4.3
 audioread==3.0.1
 pooch>=1.8.2
 joblib>=1.4.2
 threadpoolctl>=3.2.0
 
-# Audio feature extraction (latest compatible versions)
+# Audio feature extraction (stable versions)
 pyworld==0.3.4
-pysptk==1.0.1
-
-# Advanced audio processing (stable version)
-noisereduce==3.0.2
 
 # Additional performance libraries
 orjson==3.10.6
 msgpack==1.0.8
 
-# Development and debugging (optional)
-ipython==8.26.0
-jupyter==1.0.0
-
 # Model downloading and caching
 huggingface-hub==0.24.2
 
-# CUDA 12.4 specific optimizations (compatible versions)
-nvidia-cudnn-cu12==9.1.0.70
-nvidia-cufft-cu12==11.2.1.3
-nvidia-curand-cu12==10.3.5.147
-nvidia-cusolver-cu12==11.6.1.9
-nvidia-cusparse-cu12==12.3.1.170
-nvidia-nccl-cu12==2.20.5
-
-# Triton for GPU kernel optimization (compatible version)
-triton==2.3.1
+# CUDA 12.1 specific libraries (compatible with PyTorch 2.4.1+cu121)
+nvidia-cudnn-cu12>=9.1.0
+nvidia-cufft-cu12>=11.2.0
+nvidia-curand-cu12>=10.3.0
+nvidia-cusolver-cu12>=11.6.0
+nvidia-cusparse-cu12>=12.3.0
+nvidia-nccl-cu12>=2.20.0
 
 # Additional CUDA utilities
 pynvml==11.5.0
+
+# Remove problematic dependencies that can cause symbol conflicts
+# cupy-cuda12x - removed due to potential conflicts
+# triton - removed due to version incompatibility
+# pysptk - removed due to compilation issues
+# noisereduce - removed due to dependency conflicts
+# ipython/jupyter - removed to minimize dependencies
