@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.2)
-# NVIDIA CUDA 12.6.1 + large-v3 model configuration for maximum accuracy
+# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.3)
+# NVIDIA CUDA 12.4.1 + large-v3 model configuration for maximum accuracy
 # Encoding: UTF-8
 
 services:
-  # Main Whisper Application (GPU Optimized for CUDA 12.6.1)
+  # Main Whisper Application (GPU Optimized for CUDA 12.4.1)
   whisper-subtitles-gpu:
     build:
       context: .
@@ -28,7 +28,7 @@ services:
       - LANGUAGE=${LANGUAGE:-auto}
       - SAMPLE_RATE=${SAMPLE_RATE:-16000}
       - CHUNK_SIZE=${CHUNK_SIZE:-1024}
-      # CUDA 12.6.1 optimization settings
+      # CUDA 12.4.1 optimization settings
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
       - BEAM_SIZE=${BEAM_SIZE:-5}
@@ -42,7 +42,7 @@ services:
       - COMPRESSION_RATIO_THRESHOLD=${COMPRESSION_RATIO_THRESHOLD:-2.4}
       - LOG_PROB_THRESHOLD=${LOG_PROB_THRESHOLD:--1.0}
       - NO_SPEECH_THRESHOLD=${NO_SPEECH_THRESHOLD:-0.6}
-      # Performance optimization (CUDA 12.6.1)
+      # Performance optimization (CUDA 12.4.1)
       - MAX_WORKERS=${MAX_WORKERS:-4}
       - BATCH_SIZE=${BATCH_SIZE:-16}
       - MODEL_PATH=/app/data/models
@@ -58,13 +58,13 @@ services:
       - TZ=${TZ:-Asia/Tokyo}
       - LANG=${LANG:-en_US.UTF-8}
       - LC_ALL=${LC_ALL:-en_US.UTF-8}
-      # CUDA 12.6.1 optimization
+      # CUDA 12.4.1 optimization
       - CUDA_VISIBLE_DEVICES=all
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_CACHE_PATH=/tmp/cuda_cache
       - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-      # Memory optimization (CUDA 12.6.1)
+      # Memory optimization (CUDA 12.4.1)
       - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.85}
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
       - CUDA_MODULE_LOADING=LAZY
@@ -78,7 +78,7 @@ services:
       - whisper-network
     depends_on:
       - redis
-    # GPU configuration for Docker Compose (CUDA 12.6.1)
+    # GPU configuration for Docker Compose (CUDA 12.4.1)
     deploy:
       resources:
         reservations:
