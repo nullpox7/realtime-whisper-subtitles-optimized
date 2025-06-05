@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.4)
-# CUDA 12.0 + PyTorch 2.1.0 stable configuration - double free error resolved
+# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.2)
+# NVIDIA CUDA 12.6.1 + large-v3 model configuration for maximum accuracy
 # Encoding: UTF-8
 
 services:
-  # Main Whisper Application (GPU Optimized with Memory Protection)
+  # Main Whisper Application (GPU Optimized for CUDA 12.6.1)
   whisper-subtitles-gpu:
     build:
       context: .
@@ -23,12 +23,12 @@ services:
       - HOST=${HOST:-0.0.0.0}
       - PORT=${PORT:-8000}
       - DEBUG=${DEBUG:-false}
-      # Memory-safe model configuration
+      # Large-v3 model configuration (maximum accuracy)
       - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
       - LANGUAGE=${LANGUAGE:-auto}
       - SAMPLE_RATE=${SAMPLE_RATE:-16000}
       - CHUNK_SIZE=${CHUNK_SIZE:-1024}
-      # CUDA 12.0 memory-safe settings
+      # CUDA 12.6.1 optimization settings
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
       - BEAM_SIZE=${BEAM_SIZE:-5}
@@ -36,15 +36,15 @@ services:
       - TEMPERATURE=${TEMPERATURE:-0.0}
       - LENGTH_PENALTY=${LENGTH_PENALTY:-1.0}
       - PATIENCE=${PATIENCE:-1.0}
-      # Memory-safe processing settings
+      # High accuracy processing settings
       - ENABLE_WORD_TIMESTAMPS=${ENABLE_WORD_TIMESTAMPS:-true}
       - VAD_FILTER=${VAD_FILTER:-true}
       - COMPRESSION_RATIO_THRESHOLD=${COMPRESSION_RATIO_THRESHOLD:-2.4}
       - LOG_PROB_THRESHOLD=${LOG_PROB_THRESHOLD:--1.0}
       - NO_SPEECH_THRESHOLD=${NO_SPEECH_THRESHOLD:-0.6}
-      # Conservative performance settings to prevent memory issues
-      - MAX_WORKERS=${MAX_WORKERS:-2}
-      - BATCH_SIZE=${BATCH_SIZE:-8}
+      # Performance optimization (CUDA 12.6.1)
+      - MAX_WORKERS=${MAX_WORKERS:-4}
+      - BATCH_SIZE=${BATCH_SIZE:-16}
       - MODEL_PATH=/app/data/models
       - OUTPUT_PATH=/app/data/outputs
       - LOG_PATH=/app/data/logs
@@ -58,35 +58,27 @@ services:
       - TZ=${TZ:-Asia/Tokyo}
       - LANG=${LANG:-en_US.UTF-8}
       - LC_ALL=${LC_ALL:-en_US.UTF-8}
-      # CUDA 12.0 memory-safe optimization
+      # CUDA 12.6.1 optimization
       - CUDA_VISIBLE_DEVICES=all
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_CACHE_PATH=/tmp/cuda_cache
       - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-      # Memory protection - CRITICAL for double free prevention
-      - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.8}
-      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True
+      # Memory optimization (CUDA 12.6.1)
+      - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.85}
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
       - CUDA_MODULE_LOADING=LAZY
       - TORCH_CUDNN_V8_API_ENABLED=1
-      # jemalloc memory allocator protection
-      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-      - MALLOC_CONF="dirty_decay_ms:1000,muzzy_decay_ms:1000"
-      # Numba complete disabling - CRITICAL
-      - NUMBA_DISABLE_JIT=1
-      - NUMBA_CACHE_DIR=/dev/null
+      # Numba optimization
+      - NUMBA_DISABLE_JIT=0
+      - NUMBA_CACHE_DIR=/tmp/numba_cache
       - NUMBA_THREADING_LAYER=workqueue
-      - NUMBA_PARALLEL=0
-      - NUMBA_DISABLE_PERFORMANCE_WARNINGS=1
-      - NUMBA_DISABLE_CUDA=1
-      # Python memory management
-      - PYTHONHASHSEED=0
-      - PYTHONMALLOC=malloc
+      - NUMBA_PARALLEL=1
     networks:
       - whisper-network
     depends_on:
       - redis
-    # GPU configuration with memory limits
+    # GPU configuration for Docker Compose (CUDA 12.6.1)
     deploy:
       resources:
         reservations:
@@ -95,7 +87,7 @@ services:
               count: 1
               capabilities: [gpu]
         limits:
-          memory: 8G  # Conservative memory limit for stability
+          memory: 12G
     # Runtime configuration for older Docker versions
     runtime: nvidia
     healthcheck:
@@ -103,9 +95,9 @@ services:
       interval: 30s
       timeout: 20s
       retries: 5
-      start_period: 240s  # Extended startup time for memory-safe initialization
+      start_period: 180s
 
-  # Redis for caching and session storage (memory-optimized)
+  # Redis for caching and session storage (optimized for GPU workload)
   redis:
     image: redis:7.2-alpine
     restart: unless-stopped
@@ -120,16 +112,16 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
         reservations:
-          memory: 256M
+          memory: 512M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-  # GPU monitoring (optional, memory-safe)
+  # GPU monitoring (optional)
   nvidia-smi-exporter:
     image: mindprince/nvidia_gpu_prometheus_exporter:0.1
     restart: unless-stopped
@@ -149,8 +141,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-        limits:
-          memory: 256M
 
   # Prometheus for monitoring (optional)
   prometheus:
@@ -170,10 +160,6 @@ services:
       - whisper-network
     profiles:
       - monitoring
-    deploy:
-      resources:
-        limits:
-          memory: 1G
 
   # Grafana for visualization (optional)
   grafana:
@@ -196,10 +182,6 @@ services:
       - prometheus
     profiles:
       - monitoring
-    deploy:
-      resources:
-        limits:
-          memory: 512M
 
 volumes:
   redis_data:
