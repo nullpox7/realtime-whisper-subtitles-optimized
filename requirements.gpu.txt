@@ -52,8 +52,8 @@ packaging==24.2
 # Async HTTP client
 httpx==0.28.1
 
-# Logging utilities
-structlog==24.5.0
+# Logging utilities (FIXED VERSION)
+structlog==25.4.0
 
 # Date/time handling
 python-dateutil==2.9.0
