@@ -1,5 +1,5 @@
-# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.3)
-# CUDA 11.8 + PyTorch 2.1.0 stable configuration - double free error resolved
+# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.4)
+# CUDA 12.0 + PyTorch 2.1.0 stable configuration - double free error resolved
 # Encoding: UTF-8
 
 services:
@@ -28,7 +28,7 @@ services:
       - LANGUAGE=${LANGUAGE:-auto}
       - SAMPLE_RATE=${SAMPLE_RATE:-16000}
       - CHUNK_SIZE=${CHUNK_SIZE:-1024}
-      # CUDA 11.8 memory-safe settings
+      # CUDA 12.0 memory-safe settings
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
       - BEAM_SIZE=${BEAM_SIZE:-5}
@@ -58,12 +58,12 @@ services:
       - TZ=${TZ:-Asia/Tokyo}
       - LANG=${LANG:-en_US.UTF-8}
       - LC_ALL=${LC_ALL:-en_US.UTF-8}
-      # CUDA 11.8 memory-safe optimization
+      # CUDA 12.0 memory-safe optimization
       - CUDA_VISIBLE_DEVICES=all
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_CACHE_PATH=/tmp/cuda_cache
-      - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9"
+      - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
       # Memory protection - CRITICAL for double free prevention
       - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.8}
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True
