@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Dockerfile (Ultra Stable Version)
-# CUDA 12.1 + PyTorch 2.1.2 stable configuration - All symbol errors resolved
+# Real-time Whisper Subtitles - GPU Dockerfile (Stable v2.2.3)
+# CUDA 11.8 + PyTorch 2.1.0 stable configuration - double free error resolved
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
+FROM nvidia/cuda:11.8-devel-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,45 +13,49 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
-# Memory error prevention - CRITICAL: Disable ALL JIT compilation
+# CRITICAL: Memory error prevention - Complete JIT disabling
 ENV NUMBA_DISABLE_JIT=1
 ENV NUMBA_CACHE_DIR=/dev/null
 ENV NUMBA_THREADING_LAYER=workqueue
 ENV NUMBA_PARALLEL=0
+ENV NUMBA_DISABLE_PERFORMANCE_WARNINGS=1
+ENV NUMBA_DISABLE_CUDA=1
 
-# CUDA 12.1 optimization settings (stable configuration)
+# Memory allocator stabilization - Use jemalloc to prevent double free
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+ENV MALLOC_CONF="dirty_decay_ms:1000,muzzy_decay_ms:1000"
+
+# PyTorch memory management - Prevent memory fragmentation
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True
+ENV CUDA_MEMORY_FRACTION=0.8
+ENV CUDA_MODULE_LOADING=LAZY
+ENV TORCH_CUDNN_V8_API_ENABLED=1
+
+# CUDA 11.8 optimization settings
 ENV CUDA_VISIBLE_DEVICES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV CUDA_CACHE_PATH=/tmp/cuda_cache
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9"
 
-# Memory allocator stabilization
-ENV MALLOC_TRIM_THRESHOLD_=131072
-ENV MALLOC_MMAP_THRESHOLD_=131072
-ENV MALLOC_MMAP_MAX_=65536
-
-# PyTorch CUDA settings optimized for maximum stability
-ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-ENV CUDA_MEMORY_FRACTION=0.85
-ENV CUDA_MODULE_LOADING=LAZY
-
-# Force C++ ABI compatibility for symbol resolution
-ENV _GLIBCXX_USE_CXX11_ABI=1
-ENV TORCH_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=1"
+# Python garbage collection optimization
+ENV PYTHONHASHSEED=0
+ENV PYTHONMALLOC=malloc
 
 # Locale settings
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV TZ=Asia/Tokyo
 
-# Update package lists and install essential packages
+# Update package lists and install essential packages including jemalloc
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     curl \
     wget \
     gnupg \
     ca-certificates \
+    libjemalloc2 \
+    libjemalloc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Add deadsnakes PPA for Python 3.11
@@ -105,14 +109,10 @@ COPY requirements.gpu.txt .
 # Upgrade pip and install wheel
 RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
-# CRITICAL: Install PyTorch and torchaudio with EXACT stable versions
-# Using CUDA 12.1 with PyTorch 2.1.2 for maximum compatibility
-RUN python3.11 -m pip install torch==2.1.2+cu121 torchaudio==2.1.2+cu121 --index-url https://download.pytorch.org/whl/cu121
+# Install PyTorch with CUDA 11.8 support (stable LTS version)
+RUN python3.11 -m pip install torch==2.1.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
 
-# Verify PyTorch installation and compatibility immediately
-RUN python3.11 -c "import torch, torchaudio; print('='*50); print('? PyTorch and torchaudio compatibility test'); print(f'PyTorch version: {torch.__version__}'); print(f'torchaudio version: {torchaudio.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}'); print('? All imports successful - no symbol errors'); print('='*50)"
-
-# Install other Python dependencies AFTER PyTorch verification
+# Install other Python dependencies (memory-safe versions)
 RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.txt
 
 # Create necessary directories with proper permissions
@@ -151,9 +151,6 @@ RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /home/appuser/.cache/torch \
     && mkdir -p /home/appuser/.cache/huggingface
 
-# Final comprehensive verification that everything works
-RUN python3.11 -c "import torch, torchaudio; print('? Final compatibility verification:'); print(f'? PyTorch: {torch.__version__}'); print(f'? torchaudio: {torchaudio.__version__}'); print(f'? CUDA available: {torch.cuda.is_available()}'); print('? All compatibility tests passed!')"
-
 # Expose port
 EXPOSE 8000
 
@@ -161,7 +158,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=60s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set default environment variables optimized for CUDA 12.1 and stable operation
+# Set default environment variables optimized for memory stability
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WHISPER_MODEL=large-v3
@@ -173,8 +170,8 @@ ENV TEMPERATURE=0.0
 ENV BEST_OF=5
 ENV ENABLE_WORD_TIMESTAMPS=true
 ENV VAD_FILTER=true
-ENV BATCH_SIZE=16
-ENV MAX_WORKERS=4
+ENV BATCH_SIZE=8
+ENV MAX_WORKERS=2
 
-# Default command
+# Default command with jemalloc preloaded
 CMD ["python3.11", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

@@ -1,110 +1,101 @@
-# Real-time Whisper Subtitles - GPU Optimized Dependencies (Double Free Fixed v2.2.2)
-# CUDA 12.4+ cuDNN optimized for large-v3 model maximum accuracy - Memory safe
+# Real-time Whisper Subtitles - GPU Optimized Dependencies (v2.2.3)
+# CUDA 11.8 + PyTorch 2.1.0 stable configuration - memory-safe and compatible
 # Encoding: UTF-8
 
 # Web Framework (essential)
-fastapi==0.111.0
-uvicorn[standard]==0.30.1
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
 websockets==12.0
-jinja2==3.1.4
+jinja2==3.1.3
 python-multipart==0.0.9
 
-# PyTorch with CUDA 12.4 support (installed separately in Dockerfile)
-# torch==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
-# torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+# PyTorch with CUDA 11.8 support (installed separately in Dockerfile)
+# torch==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+# torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
 
-# Core AI/ML (GPU optimized versions - memory safe)
-faster-whisper==1.0.3
-transformers==4.42.3
-accelerate==0.32.1
+# Core AI/ML (memory-safe versions compatible with PyTorch 2.1.0)
+faster-whisper==0.10.1
+transformers==4.35.2
+accelerate==0.25.0
 
-# Audio Processing (high-quality, memory safe)
-librosa==0.10.2
+# Audio Processing (stable, memory-safe)
+librosa==0.10.1
 soundfile==0.12.1
 
-# Scientific Computing - GPU optimized and memory-safe versions
-numpy>=1.24.0,<2.0.0
-scipy==1.13.1
+# Scientific Computing - Memory-safe versions compatible with PyTorch 2.1.0
+numpy>=1.24.0,<1.26.0
+scipy==1.11.4
 
-# Memory allocator (CRITICAL for double free fix)
-# jemalloc is installed at system level in Dockerfile
-
-# CUDA optimization libraries for CUDA 12.4 (stable versions)
-cupy-cuda12x==13.2.0
-
-# Redis client for caching and performance
-redis==5.0.7
-aioredis==2.0.1
-
-# System utilities (memory safe)
-psutil==6.0.0
+# System utilities (stable versions)
+psutil==5.9.8
 python-dotenv==1.0.1
-requests==2.32.3
-aiofiles==24.1.0
+requests==2.31.0
+aiofiles==23.2.1
 
 # Production server
-gunicorn==22.0.0
+gunicorn==21.2.0
 
 # Monitoring and metrics
-prometheus-client==0.20.0
+prometheus-client==0.19.0
 
 # Essential utilities
-tqdm==4.66.4
-packaging==24.1
+tqdm==4.66.2
+packaging==23.2
 
 # Async HTTP client
-httpx==0.27.0
+httpx==0.26.0
 
 # Logging utilities
-structlog==24.2.0
+structlog==23.2.0
 
 # Date/time handling
-python-dateutil==2.9.0
+python-dateutil==2.8.2
 
 # Configuration management
 pyyaml==6.0.1
 
-# Memory optimization (safe versions)
+# Memory optimization (stable)
 pympler==0.9
 
-# Additional ML/Audio dependencies optimized for GPU (memory safe)
-resampy==0.4.3
+# Additional ML/Audio dependencies optimized for stability
+resampy==0.4.2
 audioread==3.0.1
-pooch>=1.8.2
-joblib>=1.4.2
-threadpoolctl>=3.2.0
+pooch>=1.8.0,<2.0.0
+joblib>=1.3.0,<1.4.0
+threadpoolctl>=3.1.0,<4.0.0
 
-# Audio feature extraction (memory safe versions)
-pyworld==0.3.4
-pysptk==1.0.1
+# Redis client for caching
+redis==5.0.1
+aioredis==2.0.1
 
-# Advanced audio processing (memory safe version - optional)
-# noisereduce==3.0.2  # DISABLED - can cause memory issues with faster-whisper
+# Additional performance libraries (stable)
+orjson==3.9.10
+msgpack==1.0.7
 
-# Additional performance libraries (memory safe)
-orjson==3.10.6
-msgpack==1.0.8
+# Model downloading and caching (stable)
+huggingface-hub==0.19.4
 
-# Development and debugging (optional)
-ipython==8.26.0
+# Development and debugging (optional, stable)
+ipython==8.18.1
 
-# Model downloading and caching
-huggingface-hub==0.24.2
+# Exclude problematic packages that cause memory issues:
+# cupy-cuda* - Can cause memory conflicts with PyTorch
+# nvidia-* packages - Let Docker handle CUDA libraries
+# noisereduce - Can cause double free errors
+# pynvml - Not essential, can cause conflicts
+# triton - Not needed for inference, can cause conflicts
 
-# CUDA 12.4 specific optimizations (compatible and memory-safe versions)
-nvidia-cudnn-cu12==9.1.0.70
-nvidia-cufft-cu12==11.2.1.3
-nvidia-curand-cu12==10.3.5.147
-nvidia-cusolver-cu12==11.6.1.9
-nvidia-cusparse-cu12==12.3.1.170
-nvidia-nccl-cu12==2.20.5
+# Audio codec support (lightweight)
+mutagen==1.47.0
 
-# Triton for GPU kernel optimization (memory safe version)
-triton==2.3.1
+# JSON schema validation
+jsonschema==4.20.0
 
-# Additional CUDA utilities (memory safe)
-pynvml==11.5.0
+# HTTP client utilities
+urllib3==2.1.0
 
-# Memory debugging utilities (optional)
-# objgraph==3.6.1  # For memory debugging only
-# memory-profiler==0.61.0  # For memory profiling only
+# Character encoding detection
+chardet==5.2.0
+
+# File system utilities
+pathlib2==2.3.7
