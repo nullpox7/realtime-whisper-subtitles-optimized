@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - Universal Dockerfile (Fixed)
-# Works on both GPU and CPU systems - Numba cache error fixed
+# Real-time Whisper Subtitles - Stable Dockerfile (Fixed v2.3.0)
+# Compatible with multiple CUDA versions and stable base images
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-FROM python:3.11-slim-bullseye
+FROM python:3.11-slim
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,11 +13,16 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV LOG_PATH=/app/data/logs
 
-# Numba cache environment variables - FIXED to disable JIT caching
+# Numba optimization - stable settings
 ENV NUMBA_DISABLE_JIT=1
-ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV NUMBA_CACHE_DIR=/dev/null
 ENV NUMBA_THREADING_LAYER=workqueue
-ENV NUMBA_PARALLEL=1
+ENV NUMBA_PARALLEL=0
+
+# Locale settings
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV TZ=Asia/Tokyo
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -39,9 +44,9 @@ RUN apt-get update && apt-get install -y \
     portaudio19-dev \
     libportaudio2 \
     libportaudiocpp0 \
-    libpulse-dev \
-    # Additional tools
+    # System utilities
     htop \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user for security
@@ -56,8 +61,8 @@ COPY requirements.txt .
 # Upgrade pip
 RUN pip3 install --upgrade pip setuptools wheel
 
-# Install PyTorch (will auto-detect GPU if available)
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Install PyTorch CPU version (stable)
+RUN pip3 install torch==2.1.0+cpu torchaudio==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu
 
 # Install other Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -69,13 +74,9 @@ RUN mkdir -p /app/data/{models,outputs,logs,cache} \
     && mkdir -p /app/src \
     && mkdir -p /app/config \
     && mkdir -p /app/logs \
-    && mkdir -p /tmp/numba_cache \
-    && mkdir -p /home/appuser/.numba \
     && mkdir -p /home/appuser/.cache \
     && chown -R appuser:appuser /app \
     && chown -R appuser:appuser /home/appuser \
-    && chown -R appuser:appuser /tmp/numba_cache \
-    && chmod -R 755 /tmp/numba_cache \
     && chmod -R 755 /home/appuser
 
 # Copy application files
@@ -83,8 +84,8 @@ COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
 
-# Copy .env.example if it exists
-COPY .env.example* ./
+# Copy environment examples
+COPY .env.example .
 
 # Set final permissions
 RUN chown -R appuser:appuser /app
@@ -95,7 +96,6 @@ USER appuser
 # Create user-specific data directories
 RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /app/logs \
-    && mkdir -p /home/appuser/.numba \
     && mkdir -p /home/appuser/.cache
 
 # Expose port
@@ -109,8 +109,15 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WHISPER_MODEL=base
-ENV LANGUAGE=ja
+ENV LANGUAGE=auto
 ENV DEVICE=auto
+ENV COMPUTE_TYPE=auto
+ENV BEAM_SIZE=1
+ENV TEMPERATURE=0.0
+ENV ENABLE_WORD_TIMESTAMPS=false
+ENV VAD_FILTER=true
+ENV BATCH_SIZE=4
+ENV MAX_WORKERS=2
 
 # Default command
 CMD ["python3", "-m", "uvicorn", "src.web_interface:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
