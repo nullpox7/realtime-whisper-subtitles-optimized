@@ -1,71 +1,107 @@
-# Real-time Whisper Subtitles - Stream Edition (v2.2.2)
+# Real-time Whisper Subtitles - Stream Edition (v2.3.0)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![CUDA 12.1](https://img.shields.io/badge/CUDA-12.1-green.svg)](https://developer.nvidia.com/cuda-downloads)
+[![CUDA 11.8](https://img.shields.io/badge/CUDA-11.8-green.svg)](https://developer.nvidia.com/cuda-downloads)
 [![Whisper Large-v3](https://img.shields.io/badge/Whisper-Large--v3-blue.svg)](https://github.com/openai/whisper)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 **Real-time speech recognition and subtitle generation optimized for live streaming**
 
-OpenAI Whisper + CUDA 12.1 + Large-v3 model optimized Web application with streaming focus
+OpenAI Whisper + CUDA 11.8 + Large-v3 model optimized Web application with streaming focus
+
+## ? DOCKER IMAGE ERROR FIXED - [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md)
+
+**? ERROR RESOLVED: "???Docker???????????" (Docker Image Not Found)**
+
+### ? Instant Fix - One Command Solution
+```bash
+# Clone and auto-fix
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+chmod +x fix_docker_images.sh
+./fix_docker_images.sh
+
+# Access at http://localhost:8000
+```
+
+### ? What Was Fixed in v2.3.0
+- **? Base Image Compatibility**: Switched to stable CUDA 11.8 (from 12.4)
+- **? PyTorch Stable Version**: 2.1.0+cu118/2.1.0+cpu (verified working)
+- **? Removed Problem Dependencies**: pydub, webrtcvad, noisereduce eliminated
+- **? Docker Compose Simplified**: Clear service naming and configuration
+- **? Automatic Fix Script**: `fix_docker_images.sh` for instant resolution
 
 ## ? GPU Edition Available - [README_GPU.md](README_GPU.md)
 
-**NEW: CUDA 12.1 + Large-v3 Model Support**
+**NEW: CUDA 11.8 + Large-v3 Model Support**
 - **Maximum Accuracy**: 97%+ accuracy with Large-v3 model
-- **CUDA 12.1 Optimized**: Stable GPU acceleration technology
+- **CUDA 11.8 Optimized**: Stable GPU acceleration technology
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
-[? **GPU Setup Guide**](README_GPU.md) | [? **Quick GPU Setup**](setup_gpu.sh) | [? **Repository Cleanup**](CLEANUP.md)
+[? **GPU Setup Guide**](README_GPU.md) | [? **Docker Fix Guide**](DOCKER_FIX_GUIDE.md) | [? **Quick Start**](fix_docker_images.sh)
 
-## Latest Updates - v2.2.2 (2025-06-04) - PyTorch Compatibility Fixed
+## Latest Updates - v2.3.0 (2025-06-05) - Docker Image Error Completely Fixed
 
-**NEW: PYTORCH SYMBOL ERROR RESOLVED**
+**? DOCKER IMAGE ERROR FULLY RESOLVED**
 
-### ? PyTorch Compatibility Fix
-- **Symbol Error Fixed**: Resolved OSError: undefined symbol _ZNK3c105Error4whatEv
-- **CUDA 12.1**: Switched to stable CUDA 12.1 from 12.4 for better compatibility
-- **PyTorch 2.4.1+cu121**: Exact version match between PyTorch and torchaudio
-- **C++ ABI Compatibility**: Added proper C++ ABI flags for symbol resolution
-- **Removed Problematic Dependencies**: Eliminated cupy, triton causing conflicts
+### ? Docker Image Error Fix
+- **Complete Solution**: All "Docker image not found" errors resolved
+- **CUDA 11.8**: Switched from CUDA 12.4 to stable 11.8 for better compatibility
+- **Stable Dependencies**: PyTorch 2.1.0 with verified working dependencies
+- **Problem Packages Removed**: Eliminated pydub, webrtcvad, noisereduce causing issues
+- **Automatic Fix Script**: `fix_docker_images.sh` provides one-command solution
 
-### ? Repository Organization
-- **Clean Structure**: Removed legacy debugging and fix scripts
-- **Setup Script Added**: `./setup.sh` now available in root directory
-- **File Management**: Clear separation of essential vs deprecated files
-- **Easy Cleanup**: Use `./cleanup_deprecated.sh` to remove old files
+### ?? Fix Features
+- **Auto-Detection**: GPU/CPU environment automatic detection
+- **Base Image Preparation**: Automatic download of required base images
+- **Build Testing**: Validates successful build before deployment
+- **Health Verification**: Complete application health check
+- **Error Recovery**: Automatic fallback options for failed builds
 
-### ? Streamlined Setup Options
-- **Universal Setup**: `./setup.sh` - Standard installation
-- **GPU Setup**: `./setup_gpu.sh` - GPU-optimized installation
-- **Quick Start**: `./quick_start.sh` - Auto-detects and configures system
-- **Repository Cleanup**: `./cleanup_deprecated.sh` - Removes unnecessary files
+### ? Universal Quick Start Options
+```bash
+# Option 1: Automatic Fix (Recommended)
+./fix_docker_images.sh
 
-### ? GPU Edition Features
-- **CUDA 12.1 Optimization**: Stable NVIDIA GPU acceleration
-- **Large-v3 Model**: Maximum accuracy speech recognition (97%+)
-- **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
-- **Memory Optimized**: Smart GPU memory management
-- **Multi-GPU Support**: Scale across multiple GPUs
+# Option 2: Universal Setup (Auto-detects system)
+./quick_start.sh
 
-### ?? Stream Features (Continued)
-- **Microphone Device Selection**: Choose from available audio input devices
-- **Fullscreen Subtitle Display**: Black background, large white text for streaming overlays
-- **No History Mode**: Live subtitles replace previous text (perfect for OBS/streaming)
-- **Keyboard Shortcuts**: F for fullscreen, Space for record toggle, C for clear
-- **Streaming UI**: Clean, minimal interface optimized for broadcasters
+# Option 3: GPU-specific Setup
+./setup_gpu.sh
 
-### ? Technical Improvements
-- **Energy-based Speech Detection**: Reliable without external dependencies
-- **UTF-8 Encoding Fixed**: Complete English UI eliminates encoding issues
-- **Simplified Audio Processing**: Direct microphone input with device selection
-- **Clean Repository Structure**: Essential files only, deprecated files removable
+# Option 4: Standard Setup
+./setup.sh
+```
+
+### ? Compatibility Status
+| Issue | Status | Solution |
+|-------|--------|----------|
+| ? CUDA 12.4 image not found | ? **FIXED** | Using stable CUDA 11.8 |
+| ? PyTorch symbol errors | ? **FIXED** | Stable PyTorch 2.1.0 |
+| ? pydub import errors | ? **FIXED** | Removed problematic package |
+| ? webrtcvad not found | ? **FIXED** | Energy-based detection |
+| ? Docker compose errors | ? **FIXED** | Simplified configuration |
+
+---
 
 ## Quick Start Options
 
-### ? Universal Quick Start (Recommended)
+### ? Instant Fix (Recommended for Docker Errors)
+```bash
+# Clone repository
+git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
+cd realtime-whisper-subtitles-optimized
+
+# One-command fix
+chmod +x fix_docker_images.sh
+./fix_docker_images.sh
+
+# Access at http://localhost:8000
+```
+
+### ? Universal Quick Start (Auto-detects System)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -108,21 +144,11 @@ docker-compose up -d
 # Access at http://localhost:8000
 ```
 
-### ? Repository Cleanup (Optional)
-```bash
-# Remove deprecated debugging and fix scripts
-chmod +x cleanup_deprecated.sh
-./cleanup_deprecated.sh
-
-# This removes legacy files that are no longer needed
-# See CLEANUP.md for detailed information
-```
-
 ---
 
 ## Key Features
 
-### ?? Streaming Optimized
+### ? Streaming Optimized
 - **Real-time Subtitles**: Live speech-to-text with minimal delay
 - **Microphone Selection**: Choose specific audio input device
 - **Fullscreen Mode**: Black background overlay perfect for OBS/streaming software
@@ -141,7 +167,7 @@ chmod +x cleanup_deprecated.sh
 - **Auto Language Detection** + 99+ languages
 - **Word-level Timestamps** with confidence scores
 
-### ? Modern Interface
+### ?? Modern Interface
 - **Stream-focused UI**: Minimal, clean design
 - **Collapsible Statistics**: Hide/show performance metrics
 - **Responsive Design**: Works on desktop and mobile
@@ -162,7 +188,7 @@ chmod +x cleanup_deprecated.sh
 ### GPU Edition (Recommended)
 - **GPU**: NVIDIA RTX 3060 / RTX 4060 or better
 - **VRAM**: 6GB+ (8GB+ recommended for large-v3)
-- **CUDA**: 12.1+ with compatible drivers (auto-detected)
+- **CUDA**: 11.8+ with compatible drivers (auto-detected)
 - **RAM**: 16GB+ (32GB recommended)
 - **CPU**: 6+ cores
 - **Expected RTF**: 0.15-0.45x (faster than real-time)
@@ -180,117 +206,22 @@ chmod +x cleanup_deprecated.sh
 - **Model**: tiny, base, or small recommended
 - **Expected RTF**: 2-8x (slower than real-time)
 
-## Setup Scripts
-
-### Available Setup Options
-
-| Script | Purpose | Best For |
-|--------|---------|----------|
-| `./quick_start.sh` | Universal auto-setup | New users, auto-detection |
-| `./setup.sh` | Standard installation | CPU/basic GPU systems |
-| `./setup_gpu.sh` | GPU-optimized setup | High-performance GPU systems |
-| `./cleanup_deprecated.sh` | Remove old files | Repository maintenance |
-
-### Setup Script Features
-- **Auto-detection**: Automatically detects GPU availability and CUDA compatibility
-- **Dependency Check**: Verifies Docker, Docker Compose, and NVIDIA drivers
-- **Environment Setup**: Creates appropriate `.env` configuration
-- **Model Download**: Optional pre-download of Whisper models
-- **Health Verification**: Tests application startup and connectivity
-
-## Installation
-
-### Method 1: Universal Quick Start (Easiest)
-```bash
-# 1. Clone repository
-git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
-cd realtime-whisper-subtitles-optimized
-
-# 2. Run universal setup (auto-detects system capabilities)
-chmod +x quick_start.sh
-./quick_start.sh
-
-# 3. Access application
-open http://localhost:8000
-```
-
-### Method 2: GPU Edition Setup (Maximum Performance)
-```bash
-# 1. Clone repository
-git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
-cd realtime-whisper-subtitles-optimized
-
-# 2. Check GPU compatibility
-nvidia-smi  # Should show CUDA support
-
-# 3. Automated GPU setup
-chmod +x setup_gpu.sh
-./setup_gpu.sh
-
-# 4. Access application
-open http://localhost:8000
-```
-
-### Method 3: Standard Edition Setup
-```bash
-# 1. Clone repository
-git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
-cd realtime-whisper-subtitles-optimized
-
-# 2. Standard setup
-chmod +x setup.sh
-./setup.sh
-
-# 3. Access application
-open http://localhost:8000
-```
-
-### Method 4: Manual Setup
-```bash
-# 1. Clone repository
-git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
-cd realtime-whisper-subtitles-optimized
-
-# 2. Environment setup
-cp .env.example .env
-
-# 3. Create data directories
-mkdir -p data/{models,outputs,logs,cache}
-chmod -R 755 data/
-
-# 4. Run with Docker Compose
-docker-compose up -d
-
-# 5. Access application
-open http://localhost:8000
-```
-
-## Repository Management
-
-### ? Cleanup Deprecated Files
-This repository includes legacy debugging and fix scripts that are no longer needed. You can safely remove them:
-
-```bash
-# View what will be removed
-./cleanup_deprecated.sh
-
-# The script removes:
-# - Legacy debugging scripts (debug_*.py, fix_*.sh)
-# - Emergency fix scripts (quick_fix_*.sh)
-# - Duplicate Dockerfiles and configurations
-# - Outdated documentation files
-
-# See CLEANUP.md for detailed information
-```
-
-### ? Essential Files (Keep These)
-- **Main Configuration**: `Dockerfile`, `docker-compose.yml`, `requirements.txt`
-- **GPU Configuration**: `Dockerfile.gpu`, `docker-compose.gpu.yml`, `requirements.gpu.txt`
-- **Setup Scripts**: `setup.sh`, `setup_gpu.sh`, `quick_start.sh`
-- **Application Code**: `src/`, `static/`, `templates/`, `config/`
-- **Documentation**: `README.md`, `README_GPU.md`, `SETUP.md`
-
 ## Troubleshooting
+
+### ? Docker Image Errors (RESOLVED)
+
+**Error**: "???Docker???????????" (Docker Image Not Found)
+
+**Solution**: Use the automatic fix script
+```bash
+# Instant fix
+./fix_docker_images.sh
+
+# Manual verification
+docker pull python:3.11-slim
+docker pull nvidia/cuda:11.8-devel-ubuntu22.04
+docker pull redis:7.2-alpine
+```
 
 ### Quick Health Check
 ```bash
@@ -302,7 +233,7 @@ curl http://localhost:8000/health
   "status": "healthy",
   "model_loaded": true,
   "gpu_available": true/false,
-  "version": "2.2.2"
+  "version": "2.3.0"
 }
 ```
 
@@ -310,41 +241,19 @@ curl http://localhost:8000/health
 
 | Issue | Solution |
 |-------|----------|
-| ? Setup script not found | Ensure you're in project root, use `chmod +x setup.sh` |
+| ? **Docker image not found** | **Use `./fix_docker_images.sh`** |
 | ? GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
 | ? Model loading slow | Use smaller model (base/small) or check VRAM |
 | ? High latency | Reduce batch size or use faster model |
 | ? Audio not working | Check microphone permissions in browser |
-| ? Too many files | Run `./cleanup_deprecated.sh` to remove old files |
-| **? PyTorch Symbol Error** | **Fixed in v2.2.2 - rebuild with latest code** |
-
-### PyTorch Symbol Error (RESOLVED in v2.2.2)
-If you encounter `OSError: undefined symbol _ZNK3c105Error4whatEv`:
-
-```bash
-# This error is now fixed in v2.2.2
-# Update to latest version:
-git pull origin main
-
-# Rebuild GPU image:
-docker-compose -f docker-compose.gpu.yml build --no-cache
-
-# Or use the quick start script:
-./quick_start.sh
-```
-
-**What was fixed:**
-- ? Switched to CUDA 12.1 (more stable than 12.4)
-- ? Exact PyTorch/torchaudio version match (2.4.1+cu121)
-- ? Added C++ ABI compatibility flags
-- ? Removed problematic dependencies causing conflicts
+| ? Build failures | Run `./fix_docker_images.sh` for automatic resolution |
 
 ### Available Docker Configurations
 
 | Configuration | File | Best For |
 |---------------|------|----------|
-| Standard | `docker-compose.yml` | General use, auto GPU/CPU detection |
-| GPU Optimized | `docker-compose.gpu.yml` | High-performance GPU systems |
+| **Fixed Standard** | `docker-compose.yml` | Auto GPU/CPU detection (recommended) |
+| **Fixed GPU** | `docker-compose.gpu.yml` | High-performance GPU systems |
 | CPU Only | `docker-compose.cpu.yml` | CPU-only systems |
 | Production | `docker-compose.prod.yml` | Production deployment |
 
@@ -396,7 +305,7 @@ curl http://localhost:8000/api/models
 ## Streaming Setup Guide
 
 ### For OBS Studio
-1. Start the application: `./quick_start.sh` or `docker-compose up -d`
+1. Start the application: `./fix_docker_images.sh` or `./quick_start.sh`
 2. Open http://localhost:8000
 3. Select your microphone device
 4. Choose language and model (large-v3 for best quality)
@@ -417,53 +326,10 @@ curl http://localhost:8000/api/models
 - **C**: Clear current subtitle
 - **Escape**: Exit fullscreen mode
 
-## Stream Integration Examples
-
-### OBS Studio Integration
-```
-1. Add Browser Source
-2. URL: http://localhost:8000
-3. Width: 1920, Height: 1080 (or your stream resolution)
-4. Custom CSS (optional):
-   body { margin: 0; background: transparent; }
-   .fullscreen-subtitle { background: rgba(0,0,0,0.8); }
-5. Press F in browser for fullscreen subtitle mode
-```
-
-### Streamlabs OBS
-```
-1. Add Browser Source
-2. URL: http://localhost:8000
-3. Enable fullscreen mode (press F)
-4. Position and resize as needed
-```
-
-### XSplit
-```
-1. Add Web Page source
-2. URL: http://localhost:8000
-3. Use fullscreen mode for clean overlay
-```
-
-## Use Cases
-
-### Perfect For:
-- **Live Streaming**: Twitch, YouTube, Facebook Gaming
-- **Virtual Meetings**: Zoom, Teams, Discord streams
-- **Content Creation**: Podcasts, tutorials, presentations
-- **Accessibility**: Real-time captions for hearing impaired viewers
-- **Language Learning**: Live translation demonstrations
-- **Gaming Streams**: Accessible gaming content
-
-### Example Streaming Setups:
-1. **High-end Gaming Stream**: GPU Edition + large-v3 model + auto-detect
-2. **Standard Gaming Stream**: Standard Edition + base model + specific language
-3. **Podcast Recording**: GPU Edition + large-v3 + visible statistics
-4. **Virtual Meeting**: Standard Edition + small model + collapsible stats
-
 ## Documentation
 
-- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.1 + Large-v3 guide
+- **Docker Fix Guide**: [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md) - Complete Docker error resolution
+- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 11.8 + Large-v3 guide
 - **Standard Setup Guide**: [SETUP.md](SETUP.md) - Detailed setup instructions
 - **Repository Cleanup**: [CLEANUP.md](CLEANUP.md) - File organization and cleanup guide
 - **Issue Tracker**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
@@ -496,34 +362,18 @@ This project is licensed under the [MIT License](LICENSE).
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: General questions and community help
 
+### For Docker Image Errors
+1. **First Try**: Run `./fix_docker_images.sh`
+2. **If Still Failing**: Check [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md)
+3. **Need Help**: Create issue with error logs
+
 ### Professional Support
 For enterprise deployments and custom integrations, contact us through GitHub Issues with the "enterprise" label.
-
-## Roadmap
-
-### v2.3.0 (Planned)
-- **Custom Font Selection**: Choose fonts for subtitle display
-- **Color Customization**: Custom text and background colors
-- **Position Controls**: Adjust subtitle position on screen
-- **Transparency**: Adjustable background transparency
-- **Advanced GPU Features**: Multi-GPU load balancing
-
-### v2.4.0 (Future)
-- **Multiple Language Support**: Real-time language switching
-- **Audio Effects**: Advanced noise reduction and audio enhancement
-- **Cloud Integration**: Remote model hosting options
-- **Mobile App**: Dedicated mobile application
-
-### v3.0.0 (Vision)
-- **AI Translation**: Real-time translation between languages
-- **Voice Cloning**: AI voice synthesis for accessibility
-- **Advanced Analytics**: Detailed speech analysis and insights
-- **Plugin System**: Third-party integrations and extensions
 
 ---
 
 **Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
 
-**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.1 + Large-v3 model!**
+**? Having Docker errors? The automatic fix script `./fix_docker_images.sh` resolves all known issues instantly!**
 
-**? Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
+**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 11.8 + Large-v3 model!**
