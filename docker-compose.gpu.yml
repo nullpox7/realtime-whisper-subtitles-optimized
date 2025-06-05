@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.2.3)
-# NVIDIA CUDA 12.4.1 + large-v3 model configuration for maximum accuracy
+# Real-time Whisper Subtitles - GPU Optimized Docker Compose (v2.3.0)
+# NVIDIA CUDA 12.8 + PyTorch 2.7.0 + CuDNN 9 configuration for maximum accuracy
 # Encoding: UTF-8
 
 services:
-  # Main Whisper Application (GPU Optimized for CUDA 12.4.1)
+  # Main Whisper Application (GPU Optimized for CUDA 12.8 + PyTorch 2.7.0)
   whisper-subtitles-gpu:
     build:
       context: .
@@ -28,7 +28,7 @@ services:
       - LANGUAGE=${LANGUAGE:-auto}
       - SAMPLE_RATE=${SAMPLE_RATE:-16000}
       - CHUNK_SIZE=${CHUNK_SIZE:-1024}
-      # CUDA 12.4.1 optimization settings
+      # CUDA 12.8 + PyTorch 2.7.0 optimization settings
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
       - BEAM_SIZE=${BEAM_SIZE:-5}
@@ -42,7 +42,7 @@ services:
       - COMPRESSION_RATIO_THRESHOLD=${COMPRESSION_RATIO_THRESHOLD:-2.4}
       - LOG_PROB_THRESHOLD=${LOG_PROB_THRESHOLD:--1.0}
       - NO_SPEECH_THRESHOLD=${NO_SPEECH_THRESHOLD:-0.6}
-      # Performance optimization (CUDA 12.4.1)
+      # Performance optimization (CUDA 12.8 + PyTorch 2.7.0)
       - MAX_WORKERS=${MAX_WORKERS:-4}
       - BATCH_SIZE=${BATCH_SIZE:-16}
       - MODEL_PATH=/app/data/models
@@ -58,17 +58,30 @@ services:
       - TZ=${TZ:-Asia/Tokyo}
       - LANG=${LANG:-en_US.UTF-8}
       - LC_ALL=${LC_ALL:-en_US.UTF-8}
-      # CUDA 12.4.1 optimization
+      # CUDA 12.8 optimization
       - CUDA_VISIBLE_DEVICES=all
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_CACHE_PATH=/tmp/cuda_cache
       - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-      # Memory optimization (CUDA 12.4.1)
+      # Memory optimization (CUDA 12.8 + CuDNN 9)
       - CUDA_MEMORY_FRACTION=${CUDA_MEMORY_FRACTION:-0.85}
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
       - CUDA_MODULE_LOADING=LAZY
       - TORCH_CUDNN_V8_API_ENABLED=1
+      # PyTorch 2.7.0 specific optimizations
+      - TORCH_COMPILE_MODE=reduce-overhead
+      - TORCH_CUDA_GRAPH_POOLING=true
+      - TORCH_CUDNN_BENCHMARK=true
+      - TORCH_CUDNN_DETERMINISTIC=false
+      # CuDNN 9 optimization settings
+      - CUDNN_VERSION=9
+      - CUDNN_BENCHMARK=true
+      - CUDNN_DETERMINISTIC=false
+      # Advanced GPU optimization (CUDA 12.8)
+      - NVIDIA_TF32_OVERRIDE=1
+      - TORCH_ALLOW_TF32_CUBLAS_OVERRIDE=1
+      - TORCH_CUDNN_ALLOW_TF32=1
       # Numba optimization
       - NUMBA_DISABLE_JIT=0
       - NUMBA_CACHE_DIR=/tmp/numba_cache
@@ -78,7 +91,7 @@ services:
       - whisper-network
     depends_on:
       - redis
-    # GPU configuration for Docker Compose (CUDA 12.4.1)
+    # GPU configuration for Docker Compose (CUDA 12.8)
     deploy:
       resources:
         reservations:
@@ -99,7 +112,7 @@ services:
 
   # Redis for caching and session storage (optimized for GPU workload)
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.4-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -144,7 +157,7 @@ services:
 
   # Prometheus for monitoring (optional)
   prometheus:
-    image: prom/prometheus:v2.49.0
+    image: prom/prometheus:v2.55.0
     restart: unless-stopped
     ports:
       - "9090:9090"
@@ -163,7 +176,7 @@ services:
 
   # Grafana for visualization (optional)
   grafana:
-    image: grafana/grafana:10.3.0
+    image: grafana/grafana:11.3.0
     restart: unless-stopped
     ports:
       - "3000:3000"
