@@ -1,69 +1,69 @@
-# Real-time Whisper Subtitles - Stream Edition (v2.3.0)
+# Real-time Whisper Subtitles - Stream Edition (v2.2.2)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![CUDA 11.8](https://img.shields.io/badge/CUDA-11.8-green.svg)](https://developer.nvidia.com/cuda-downloads)
+[![CUDA 12.4](https://img.shields.io/badge/CUDA-12.4-green.svg)](https://developer.nvidia.com/cuda-downloads)
 [![Whisper Large-v3](https://img.shields.io/badge/Whisper-Large--v3-blue.svg)](https://github.com/openai/whisper)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 **Real-time speech recognition and subtitle generation optimized for live streaming**
 
-OpenAI Whisper + CUDA 11.8 + Large-v3 model optimized Web application with streaming focus
+OpenAI Whisper + CUDA 12.4 + Large-v3 model optimized Web application with streaming focus
 
-## ? DOCKER IMAGE ERROR FIXED - [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md)
+## ? ABI COMPATIBILITY ISSUE FIXED - [ABI_FIX_GUIDE.md](#abi-compatibility-fix)
 
-**? ERROR RESOLVED: "???Docker???????????" (Docker Image Not Found)**
+**? ERROR RESOLVED: "OSError: undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev"**
 
 ### ? Instant Fix - One Command Solution
 ```bash
-# Clone and auto-fix
+# Clone and auto-fix ABI compatibility
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
-chmod +x fix_docker_images.sh
-./fix_docker_images.sh
+chmod +x fix_abi_compatibility.sh
+./fix_abi_compatibility.sh
 
 # Access at http://localhost:8000
 ```
 
-### ? What Was Fixed in v2.3.0
-- **? Base Image Compatibility**: Switched to stable CUDA 11.8 (from 12.4)
-- **? PyTorch Stable Version**: 2.1.0+cu118/2.1.0+cpu (verified working)
-- **? Removed Problem Dependencies**: pydub, webrtcvad, noisereduce eliminated
-- **? Docker Compose Simplified**: Clear service naming and configuration
-- **? Automatic Fix Script**: `fix_docker_images.sh` for instant resolution
+### ? What Was Fixed in v2.2.2
+- **? ABI Compatibility**: Fixed PyTorch/torchaudio symbol incompatibility
+- **? Exact Version Matching**: PyTorch 2.4.1+cu124 and torchaudio 2.4.1+cu124
+- **? Dependency Cleanup**: Removed problematic CUDA packages causing conflicts
+- **? Build Verification**: Added comprehensive verification steps
+- **? Automatic Fix Script**: `fix_abi_compatibility.sh` for instant resolution
 
 ## ? GPU Edition Available - [README_GPU.md](README_GPU.md)
 
-**NEW: CUDA 11.8 + Large-v3 Model Support**
+**NEW: CUDA 12.4 + Large-v3 Model Support**
 - **Maximum Accuracy**: 97%+ accuracy with Large-v3 model
-- **CUDA 11.8 Optimized**: Stable GPU acceleration technology
+- **CUDA 12.4 Optimized**: Latest GPU acceleration technology
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
-[? **GPU Setup Guide**](README_GPU.md) | [? **Docker Fix Guide**](DOCKER_FIX_GUIDE.md) | [? **Quick Start**](fix_docker_images.sh)
+[? **GPU Setup Guide**](README_GPU.md) | [? **ABI Fix Guide**](#abi-compatibility-fix) | [? **Quick Start**](fix_abi_compatibility.sh)
 
-## Latest Updates - v2.3.0 (2025-06-05) - Docker Image Error Completely Fixed
+## Latest Updates - v2.2.2 (2025-06-06) - ABI Compatibility Issue Completely Fixed
 
-**? DOCKER IMAGE ERROR FULLY RESOLVED**
+**? ABI COMPATIBILITY ERROR FULLY RESOLVED**
 
-### ? Docker Image Error Fix
-- **Complete Solution**: All "Docker image not found" errors resolved
-- **CUDA 11.8**: Switched from CUDA 12.4 to stable 11.8 for better compatibility
-- **Stable Dependencies**: PyTorch 2.1.0 with verified working dependencies
-- **Problem Packages Removed**: Eliminated pydub, webrtcvad, noisereduce causing issues
-- **Automatic Fix Script**: `fix_docker_images.sh` provides one-command solution
+### ? ABI Compatibility Fix
+- **Complete Solution**: All "undefined symbol" ABI errors resolved
+- **CUDA 12.4**: Optimized PyTorch 2.4.1+cu124 with exact torchaudio matching
+- **Symbol Verification**: Comprehensive ABI symbol availability checking
+- **Problem Packages Removed**: Eliminated conflicting CUDA packages
+- **Automatic Fix Script**: `fix_abi_compatibility.sh` provides one-command solution
 
 ### ?? Fix Features
-- **Auto-Detection**: GPU/CPU environment automatic detection
-- **Base Image Preparation**: Automatic download of required base images
-- **Build Testing**: Validates successful build before deployment
-- **Health Verification**: Complete application health check
+- **Auto-Diagnosis**: PyTorch/torchaudio compatibility diagnostic
+- **Container Cleanup**: Automatic removal of problematic containers/images
+- **Build Verification**: Validates ABI compatibility before deployment
+- **Health Testing**: Complete application functionality verification
 - **Error Recovery**: Automatic fallback options for failed builds
 
 ### ? Universal Quick Start Options
 ```bash
-# Option 1: Automatic Fix (Recommended)
-./fix_docker_images.sh
+# Option 1: ABI Compatibility Fix (Recommended for GPU)
+./fix_abi_compatibility.sh
 
 # Option 2: Universal Setup (Auto-detects system)
 ./quick_start.sh
@@ -78,25 +78,25 @@ chmod +x fix_docker_images.sh
 ### ? Compatibility Status
 | Issue | Status | Solution |
 |-------|--------|----------|
-| ? CUDA 12.4 image not found | ? **FIXED** | Using stable CUDA 11.8 |
-| ? PyTorch symbol errors | ? **FIXED** | Stable PyTorch 2.1.0 |
-| ? pydub import errors | ? **FIXED** | Removed problematic package |
-| ? webrtcvad not found | ? **FIXED** | Energy-based detection |
-| ? Docker compose errors | ? **FIXED** | Simplified configuration |
+| ? PyTorch ABI symbol errors | ? **FIXED** | Exact version matching (2.4.1+cu124) |
+| ? torchaudio undefined symbols | ? **FIXED** | Matching torchaudio 2.4.1+cu124 |
+| ? CUDA package conflicts | ? **FIXED** | Removed problematic dependencies |
+| ? Container startup failures | ? **FIXED** | Build verification and testing |
+| ? Docker compose errors | ? **FIXED** | Simplified GPU configuration |
 
 ---
 
 ## Quick Start Options
 
-### ? Instant Fix (Recommended for Docker Errors)
+### ? ABI Compatibility Fix (Recommended for GPU Systems)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
 
-# One-command fix
-chmod +x fix_docker_images.sh
-./fix_docker_images.sh
+# Automatic ABI fix
+chmod +x fix_abi_compatibility.sh
+./fix_abi_compatibility.sh
 
 # Access at http://localhost:8000
 ```
@@ -127,7 +127,7 @@ chmod +x setup_gpu.sh
 # Access at http://localhost:8000
 ```
 
-### ? Standard Edition (CPU/Basic GPU)
+### ?? Standard Edition (CPU/Basic GPU)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -142,6 +142,60 @@ cp .env.example .env
 docker-compose up -d
 
 # Access at http://localhost:8000
+```
+
+---
+
+## ABI Compatibility Fix
+
+### ? Error Description
+**Error**: `OSError: /usr/local/lib/python3.11/dist-packages/torchaudio/lib/libtorchaudio.so: undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev`
+
+**Cause**: ABI (Application Binary Interface) incompatibility between PyTorch and torchaudio versions.
+
+### ? Automatic Fix (Recommended)
+```bash
+# One-command fix
+./fix_abi_compatibility.sh
+
+# Or with options
+./fix_abi_compatibility.sh --help
+```
+
+### ? Manual Diagnosis
+```bash
+# Run diagnostic script
+python3 pytorch_diagnostic.py
+
+# Check Docker container ABI
+docker run --rm --gpus all your-image python3 -c "import torch, torchaudio; print('OK')"
+```
+
+### ? Fix Options
+
+| Option | Command | Use Case |
+|--------|---------|----------|
+| **Full Fix** | `./fix_abi_compatibility.sh` | Complete automatic resolution |
+| **Clean Only** | `./fix_abi_compatibility.sh --clean-only` | Remove problematic containers |
+| **Test Only** | `./fix_abi_compatibility.sh --test-only` | Run diagnostics only |
+| **Build Only** | `./fix_abi_compatibility.sh --build-only` | Rebuild with fixed dependencies |
+
+### ?? Manual Fix Steps
+If automatic fix fails:
+
+```bash
+# 1. Clean everything
+docker-compose -f docker-compose.gpu.yml down --volumes --remove-orphans
+docker system prune -af
+
+# 2. Rebuild with fixed dependencies
+docker-compose -f docker-compose.gpu.yml build --no-cache
+
+# 3. Start services
+docker-compose -f docker-compose.gpu.yml up -d
+
+# 4. Verify
+curl http://localhost:8000/health
 ```
 
 ---
@@ -167,7 +221,7 @@ docker-compose up -d
 - **Auto Language Detection** + 99+ languages
 - **Word-level Timestamps** with confidence scores
 
-### ?? Modern Interface
+### ? Modern Interface
 - **Stream-focused UI**: Minimal, clean design
 - **Collapsible Statistics**: Hide/show performance metrics
 - **Responsive Design**: Works on desktop and mobile
@@ -188,7 +242,7 @@ docker-compose up -d
 ### GPU Edition (Recommended)
 - **GPU**: NVIDIA RTX 3060 / RTX 4060 or better
 - **VRAM**: 6GB+ (8GB+ recommended for large-v3)
-- **CUDA**: 11.8+ with compatible drivers (auto-detected)
+- **CUDA**: 12.1+ with compatible drivers (auto-detected)
 - **RAM**: 16GB+ (32GB recommended)
 - **CPU**: 6+ cores
 - **Expected RTF**: 0.15-0.45x (faster than real-time)
@@ -208,19 +262,17 @@ docker-compose up -d
 
 ## Troubleshooting
 
-### ? Docker Image Errors (RESOLVED)
+### ? ABI Compatibility Errors (RESOLVED)
 
-**Error**: "???Docker???????????" (Docker Image Not Found)
+**Error**: "undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev"
 
-**Solution**: Use the automatic fix script
+**Solution**: Use the automatic ABI fix script
 ```bash
 # Instant fix
-./fix_docker_images.sh
+./fix_abi_compatibility.sh
 
-# Manual verification
-docker pull python:3.11-slim
-docker pull nvidia/cuda:11.8-devel-ubuntu22.04
-docker pull redis:7.2-alpine
+# Or run diagnostic first
+python3 pytorch_diagnostic.py
 ```
 
 ### Quick Health Check
@@ -233,7 +285,7 @@ curl http://localhost:8000/health
   "status": "healthy",
   "model_loaded": true,
   "gpu_available": true/false,
-  "version": "2.3.0"
+  "version": "2.2.2"
 }
 ```
 
@@ -241,19 +293,19 @@ curl http://localhost:8000/health
 
 | Issue | Solution |
 |-------|----------|
-| ? **Docker image not found** | **Use `./fix_docker_images.sh`** |
+| ? **ABI compatibility errors** | **Use `./fix_abi_compatibility.sh`** |
 | ? GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
 | ? Model loading slow | Use smaller model (base/small) or check VRAM |
-| ? High latency | Reduce batch size or use faster model |
+| ?? High latency | Reduce batch size or use faster model |
 | ? Audio not working | Check microphone permissions in browser |
-| ? Build failures | Run `./fix_docker_images.sh` for automatic resolution |
+| ? Build failures | Run `./fix_abi_compatibility.sh` for automatic resolution |
 
 ### Available Docker Configurations
 
 | Configuration | File | Best For |
 |---------------|------|----------|
-| **Fixed Standard** | `docker-compose.yml` | Auto GPU/CPU detection (recommended) |
-| **Fixed GPU** | `docker-compose.gpu.yml` | High-performance GPU systems |
+| **Fixed GPU** | `docker-compose.gpu.yml` | High-performance GPU systems (recommended) |
+| Standard | `docker-compose.yml` | General use, auto GPU/CPU detection |
 | CPU Only | `docker-compose.cpu.yml` | CPU-only systems |
 | Production | `docker-compose.prod.yml` | Production deployment |
 
@@ -305,7 +357,7 @@ curl http://localhost:8000/api/models
 ## Streaming Setup Guide
 
 ### For OBS Studio
-1. Start the application: `./fix_docker_images.sh` or `./quick_start.sh`
+1. Start the application: `./fix_abi_compatibility.sh` or `./quick_start.sh`
 2. Open http://localhost:8000
 3. Select your microphone device
 4. Choose language and model (large-v3 for best quality)
@@ -326,10 +378,53 @@ curl http://localhost:8000/api/models
 - **C**: Clear current subtitle
 - **Escape**: Exit fullscreen mode
 
+## Stream Integration Examples
+
+### OBS Studio Integration
+```
+1. Add Browser Source
+2. URL: http://localhost:8000
+3. Width: 1920, Height: 1080 (or your stream resolution)
+4. Custom CSS (optional):
+   body { margin: 0; background: transparent; }
+   .fullscreen-subtitle { background: rgba(0,0,0,0.8); }
+5. Press F in browser for fullscreen subtitle mode
+```
+
+### Streamlabs OBS
+```
+1. Add Browser Source
+2. URL: http://localhost:8000
+3. Enable fullscreen mode (press F)
+4. Position and resize as needed
+```
+
+### XSplit
+```
+1. Add Web Page source
+2. URL: http://localhost:8000
+3. Use fullscreen mode for clean overlay
+```
+
+## Use Cases
+
+### Perfect For:
+- **Live Streaming**: Twitch, YouTube, Facebook Gaming
+- **Virtual Meetings**: Zoom, Teams, Discord streams
+- **Content Creation**: Podcasts, tutorials, presentations
+- **Accessibility**: Real-time captions for hearing impaired viewers
+- **Language Learning**: Live translation demonstrations
+- **Gaming Streams**: Accessible gaming content
+
+### Example Streaming Setups:
+1. **High-end Gaming Stream**: GPU Edition + large-v3 model + auto-detect
+2. **Standard Gaming Stream**: Standard Edition + base model + specific language
+3. **Podcast Recording**: GPU Edition + large-v3 + visible statistics
+4. **Virtual Meeting**: Standard Edition + small model + collapsible stats
+
 ## Documentation
 
-- **Docker Fix Guide**: [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md) - Complete Docker error resolution
-- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 11.8 + Large-v3 guide
+- **GPU Setup Guide**: [README_GPU.md](README_GPU.md) - Complete CUDA 12.4 + Large-v3 guide
 - **Standard Setup Guide**: [SETUP.md](SETUP.md) - Detailed setup instructions
 - **Repository Cleanup**: [CLEANUP.md](CLEANUP.md) - File organization and cleanup guide
 - **Issue Tracker**: [GitHub Issues](https://github.com/nullpox7/realtime-whisper-subtitles-optimized/issues)
@@ -362,18 +457,41 @@ This project is licensed under the [MIT License](LICENSE).
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: General questions and community help
 
-### For Docker Image Errors
-1. **First Try**: Run `./fix_docker_images.sh`
-2. **If Still Failing**: Check [DOCKER_FIX_GUIDE.md](DOCKER_FIX_GUIDE.md)
-3. **Need Help**: Create issue with error logs
+### For ABI Compatibility Errors
+1. **First Try**: Run `./fix_abi_compatibility.sh`
+2. **If Still Failing**: Run `python3 pytorch_diagnostic.py` for detailed analysis
+3. **Need Help**: Create issue with diagnostic output
 
 ### Professional Support
 For enterprise deployments and custom integrations, contact us through GitHub Issues with the "enterprise" label.
+
+## Roadmap
+
+### v2.3.0 (Planned)
+- **Custom Font Selection**: Choose fonts for subtitle display
+- **Color Customization**: Custom text and background colors
+- **Position Controls**: Adjust subtitle position on screen
+- **Transparency**: Adjustable background transparency
+- **Advanced GPU Features**: Multi-GPU load balancing
+
+### v2.4.0 (Future)
+- **Multiple Language Support**: Real-time language switching
+- **Audio Effects**: Advanced noise reduction and audio enhancement
+- **Cloud Integration**: Remote model hosting options
+- **Mobile App**: Dedicated mobile application
+
+### v3.0.0 (Vision)
+- **AI Translation**: Real-time translation between languages
+- **Voice Cloning**: AI voice synthesis for accessibility
+- **Advanced Analytics**: Detailed speech analysis and insights
+- **Plugin System**: Third-party integrations and extensions
 
 ---
 
 **Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
 
-**? Having Docker errors? The automatic fix script `./fix_docker_images.sh` resolves all known issues instantly!**
+**? Having ABI compatibility errors? The automatic fix script `./fix_abi_compatibility.sh` resolves all symbol issues instantly!**
 
-**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 11.8 + Large-v3 model!**
+**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.4 + Large-v3 model!**
+
+**? Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
