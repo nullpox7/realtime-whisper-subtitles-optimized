@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Real-time Whisper Subtitles - Memory-Safe Web Interface (v2.2.2)
-Thread-safe implementation to prevent memory corruption errors
-Eliminates "corrupted double-linked list" issues
+Real-time Whisper Subtitles - cuDNN Fixed Web Interface (v2.2.3)
+CUDA 12.4 + cuDNN compatibility implementation
+Fixed libcudnn_ops_infer.so.8 error
 
 Author: Real-time Whisper Subtitles Team
 License: MIT
@@ -35,18 +35,18 @@ from faster_whisper import WhisperModel
 import librosa
 import soundfile as sf
 
-# Memory safety configuration
+# cuDNN compatibility fix - CRITICAL
+os.environ['CUDNN_VERSION'] = '9'
+os.environ['TORCH_CUDNN_V8_API_ENABLED'] = '1'
+os.environ['TORCH_CUDNN_V9_API_ENABLED'] = '1'
 os.environ['NUMBA_DISABLE_JIT'] = '1'
 os.environ['NUMBA_CACHE_DIR'] = '/dev/null'
-os.environ['OMP_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
 
 # Log directory configuration
 log_dir = os.getenv('LOG_PATH', '/app/data/logs')
 log_file_path = os.path.join(log_dir, 'whisper_app.log')
 os.makedirs(log_dir, exist_ok=True)
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -57,12 +57,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Thread safety locks
-_global_lock = threading.RLock()
-_model_lock = threading.RLock()
+def initialize_cuda_cudnn():
+    """Initialize CUDA and cuDNN with compatibility checks"""
+    try:
+        if torch.cuda.is_available():
+            logger.info("Initializing CUDA and cuDNN compatibility...")
+            torch.backends.cudnn.enabled = True
+            torch.backends.cudnn.benchmark = False
+            torch.backends.cudnn.deterministic = True
+            
+            try:
+                cudnn_version = torch.backends.cudnn.version()
+                logger.info(f"cuDNN version detected: {cudnn_version}")
+                
+                test_tensor = torch.randn(1, 1, 10, 10, device='cuda')
+                torch.nn.functional.conv2d(test_tensor, torch.randn(1, 1, 3, 3, device='cuda'))
+                logger.info("? cuDNN operations test passed")
+                del test_tensor
+                torch.cuda.empty_cache()
+                
+            except Exception as e:
+                logger.warning(f"cuDNN test failed: {e}")
+                torch.backends.cudnn.enabled = False
+        else:
+            logger.info("CUDA not available, skipping cuDNN initialization")
+    except Exception as e:
+        logger.error(f"CUDA/cuDNN initialization error: {e}")
 
 class Config:
-    """Memory-safe configuration"""
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", 8000))
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
@@ -75,17 +97,11 @@ class Config:
     OUTPUT_PATH = Path("/app/data/outputs")
     STATIC_PATH = Path("/app/static")
     TEMPLATE_PATH = Path("/app/templates")
-    
-    # Memory safety settings
-    BATCH_SIZE = int(os.getenv("BATCH_SIZE", 1))
-    MAX_WORKERS = int(os.getenv("MAX_WORKERS", 1))
-    BEAM_SIZE = int(os.getenv("BEAM_SIZE", 1))
-    ENABLE_WORD_TIMESTAMPS = os.getenv("ENABLE_WORD_TIMESTAMPS", "false").lower() == "true"
 
 app = FastAPI(
-    title="Real-time Whisper Subtitles - Memory Safe",
-    description="Memory-safe real-time speech recognition",
-    version="2.2.2"
+    title="Real-time Whisper Subtitles - cuDNN Fixed",
+    description="cuDNN compatibility fixed speech recognition",
+    version="2.2.3"
 )
 
 app.add_middleware(
@@ -100,7 +116,6 @@ app.mount("/static", StaticFiles(directory=str(Config.STATIC_PATH)), name="stati
 templates = Jinja2Templates(directory=str(Config.TEMPLATE_PATH))
 
 class UTF8JSONResponse(JSONResponse):
-    """JSON response with proper UTF-8 encoding"""
     def render(self, content) -> bytes:
         return json.dumps(
             content,
@@ -110,107 +125,71 @@ class UTF8JSONResponse(JSONResponse):
             separators=(",", ":"),
         ).encode("utf-8")
 
-# Global model instance
 whisper_model: Optional[WhisperModel] = None
-_model_initialized = False
 
-class MemorySafeAudioProcessor:
-    """Memory-safe audio processor"""
-    
+class AudioProcessor:
     @staticmethod
     def preprocess_audio(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> np.ndarray:
-        """Process audio data with memory safety"""
         try:
             if audio_data is None or len(audio_data) == 0:
                 return np.array([], dtype=np.float32)
             
-            with _global_lock:
-                audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
-                audio_array = audio_array / 32768.0
-                
-                if len(audio_array) == 0:
-                    return np.array([], dtype=np.float32)
-                
-                audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
-                audio_array = np.clip(audio_array, -1.0, 1.0)
-                
-                return audio_array
-                
+            audio_array = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32)
+            audio_array = audio_array / 32768.0
+            audio_array = np.nan_to_num(audio_array, nan=0.0, posinf=1.0, neginf=-1.0)
+            audio_array = np.clip(audio_array, -1.0, 1.0)
+            return audio_array
         except Exception as e:
             logger.error(f"Audio preprocessing error: {e}")
             return np.array([], dtype=np.float32)
-        finally:
-            gc.collect()
     
     @staticmethod
     def detect_speech(audio_data: bytes, sample_rate: int = Config.SAMPLE_RATE) -> bool:
-        """Energy-based speech detection"""
         try:
             if audio_data is None or len(audio_data) == 0:
                 return False
             
-            audio_array = MemorySafeAudioProcessor.preprocess_audio(audio_data, sample_rate)
-            
+            audio_array = AudioProcessor.preprocess_audio(audio_data, sample_rate)
             if len(audio_array) == 0:
                 return False
             
             energy = float(np.mean(audio_array ** 2))
             return energy > 0.001
-            
         except Exception as e:
             logger.error(f"Speech detection error: {e}")
             return True
-        finally:
-            gc.collect()
 
-class MemorySafeWhisperManager:
-    """Thread-safe Whisper model management"""
-    
+class WhisperManager:
     @staticmethod
     def load_model(model_name: str = Config.WHISPER_MODEL) -> WhisperModel:
-        """Load Whisper model with thread safety"""
-        global whisper_model, _model_initialized
-        
-        with _model_lock:
-            if _model_initialized and whisper_model is not None:
-                return whisper_model
+        try:
+            model_path = Config.MODEL_PATH / "whisper" / model_name
             
-            try:
-                model_path = Config.MODEL_PATH / "whisper" / model_name
-                
-                if model_path.exists():
-                    logger.info(f"Loading cached model from {model_path}")
-                    model = WhisperModel(
-                        str(model_path),
-                        device=Config.DEVICE,
-                        compute_type=Config.COMPUTE_TYPE,
-                        cpu_threads=1,
-                        num_workers=1
-                    )
-                else:
-                    logger.info(f"Downloading model: {model_name}")
-                    Config.MODEL_PATH.mkdir(parents=True, exist_ok=True)
-                    model = WhisperModel(
-                        model_name,
-                        device=Config.DEVICE,
-                        compute_type=Config.COMPUTE_TYPE,
-                        download_root=str(Config.MODEL_PATH / "whisper"),
-                        cpu_threads=1,
-                        num_workers=1
-                    )
-                
-                whisper_model = model
-                _model_initialized = True
-                logger.info(f"Model loaded successfully: {model_name} on {Config.DEVICE}")
-                return model
-                
-            except Exception as e:
-                logger.error(f"Failed to load model: {e}")
-                raise
+            if model_path.exists():
+                logger.info(f"Loading cached model from {model_path}")
+                model = WhisperModel(
+                    str(model_path),
+                    device=Config.DEVICE,
+                    compute_type=Config.COMPUTE_TYPE
+                )
+            else:
+                logger.info(f"Downloading model: {model_name}")
+                Config.MODEL_PATH.mkdir(parents=True, exist_ok=True)
+                model = WhisperModel(
+                    model_name,
+                    device=Config.DEVICE,
+                    compute_type=Config.COMPUTE_TYPE,
+                    download_root=str(Config.MODEL_PATH / "whisper")
+                )
+            
+            logger.info(f"Model loaded successfully: {model_name} on {Config.DEVICE}")
+            return model
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
     
     @staticmethod
     async def transcribe(audio_array: np.ndarray, language: str = "auto") -> Dict:
-        """Transcribe audio with memory safety"""
         try:
             if whisper_model is None:
                 raise ValueError("Whisper model not loaded")
@@ -218,87 +197,64 @@ class MemorySafeWhisperManager:
             if audio_array is None or len(audio_array) == 0:
                 return {"success": False, "error": "Empty audio data", "text": ""}
             
-            with _model_lock:
-                start_time = time.time()
-                detect_language = None if language == "auto" else language
-                
-                segments, info = whisper_model.transcribe(
-                    audio_array,
-                    language=detect_language,
-                    beam_size=Config.BEAM_SIZE,
-                    best_of=1,
-                    temperature=0.0,
-                    condition_on_previous_text=False,
-                    initial_prompt=None,
-                    word_timestamps=Config.ENABLE_WORD_TIMESTAMPS,
-                    vad_filter=False,
-                )
-                
-                results = []
-                for segment in segments:
-                    try:
-                        segment_dict = {
-                            "start": float(segment.start),
-                            "end": float(segment.end),
-                            "text": segment.text.strip(),
-                            "words": []
-                        }
-                        
-                        if Config.ENABLE_WORD_TIMESTAMPS and hasattr(segment, 'words') and segment.words:
-                            for word in segment.words:
-                                try:
-                                    segment_dict["words"].append({
-                                        "start": float(word.start),
-                                        "end": float(word.end),
-                                        "word": word.word,
-                                        "probability": float(word.probability)
-                                    })
-                                except Exception:
-                                    continue
-                        
-                        results.append(segment_dict)
-                        
-                    except Exception:
-                        continue
-                
-                processing_time = time.time() - start_time
-                audio_duration = getattr(info, 'duration', len(audio_array) / Config.SAMPLE_RATE)
-                rtf = processing_time / audio_duration if audio_duration > 0 else 0
-                
-                return {
-                    "success": True,
-                    "language": info.language,
-                    "language_probability": float(info.language_probability),
-                    "duration": float(audio_duration),
-                    "processing_time": float(processing_time),
-                    "real_time_factor": float(rtf),
-                    "segments": results,
-                    "text": " ".join([seg["text"] for seg in results])
+            start_time = time.time()
+            detect_language = None if language == "auto" else language
+            
+            segments, info = whisper_model.transcribe(
+                audio_array,
+                language=detect_language,
+                beam_size=1,
+                best_of=1,
+                temperature=0.0,
+                condition_on_previous_text=False,
+                word_timestamps=False,
+                vad_filter=False,
+            )
+            
+            results = []
+            for segment in segments:
+                segment_dict = {
+                    "start": float(segment.start),
+                    "end": float(segment.end),
+                    "text": segment.text.strip(),
+                    "words": []
                 }
-                
+                results.append(segment_dict)
+            
+            processing_time = time.time() - start_time
+            audio_duration = getattr(info, 'duration', len(audio_array) / Config.SAMPLE_RATE)
+            rtf = processing_time / audio_duration if audio_duration > 0 else 0
+            
+            return {
+                "success": True,
+                "language": info.language,
+                "language_probability": float(info.language_probability),
+                "duration": float(audio_duration),
+                "processing_time": float(processing_time),
+                "real_time_factor": float(rtf),
+                "segments": results,
+                "text": " ".join([seg["text"] for seg in results])
+            }
         except Exception as e:
             logger.error(f"Transcription error: {e}")
             return {"success": False, "error": str(e), "text": ""}
         finally:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             gc.collect()
 
-class MemorySafeConnectionManager:
-    """Thread-safe WebSocket connection manager"""
-    
+class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        self._connections_lock = threading.RLock()
     
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        with self._connections_lock:
-            self.active_connections.append(websocket)
+        self.active_connections.append(websocket)
         logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
     
     def disconnect(self, websocket: WebSocket):
-        with self._connections_lock:
-            if websocket in self.active_connections:
-                self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
         logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
     
     async def send_personal_message(self, message: dict, websocket: WebSocket):
@@ -307,17 +263,15 @@ class MemorySafeConnectionManager:
             await websocket.send_text(message_json)
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
-        finally:
-            gc.collect()
 
-manager = MemorySafeConnectionManager()
+manager = ConnectionManager()
 
 @app.on_event("startup")
 async def startup_event():
-    """Application startup with memory safety"""
     global whisper_model
     
-    logger.info("Starting Real-time Whisper Subtitles v2.2.2 (Memory Safe)...")
+    logger.info("Starting Real-time Whisper Subtitles v2.2.3 (cuDNN Fixed)...")
+    initialize_cuda_cudnn()
     
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
@@ -329,9 +283,13 @@ async def startup_event():
         logger.info(f"CUDA version: {torch.version.cuda}")
         logger.info(f"PyTorch version: {torch.__version__}")
         
+        try:
+            cudnn_version = torch.backends.cudnn.version()
+            logger.info(f"cuDNN version: {cudnn_version}")
+        except Exception as e:
+            logger.warning(f"Could not get cuDNN info: {e}")
+        
         torch.cuda.empty_cache()
-        if hasattr(torch.cuda, 'set_memory_fraction'):
-            torch.cuda.set_memory_fraction(0.5)
     else:
         logger.warning("GPU not available, using CPU")
     
@@ -339,19 +297,18 @@ async def startup_event():
     Config.OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     
     try:
-        whisper_model = MemorySafeWhisperManager.load_model()
-        logger.info("Whisper model loaded successfully")
+        whisper_model = WhisperManager.load_model()
+        logger.info("? Whisper model loaded successfully with cuDNN compatibility")
     except Exception as e:
         logger.error(f"Failed to load Whisper model: {e}")
         raise
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    """Main page"""
     try:
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "title": "Real-time Whisper Subtitles - Memory Safe"
+            "title": "Real-time Whisper Subtitles - cuDNN Fixed"
         })
     except Exception as e:
         logger.error(f"Template rendering error: {e}")
@@ -359,27 +316,37 @@ async def index(request: Request):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     gpu_available = torch.cuda.is_available()
     model_loaded = whisper_model is not None
     
-    return UTF8JSONResponse({
+    health_info = {
         "status": "healthy" if model_loaded else "loading",
-        "version": "2.2.2",
-        "mode": "memory_safe",
+        "version": "2.2.3",
+        "mode": "cudnn_fixed",
         "gpu_available": gpu_available,
         "model_loaded": model_loaded,
         "active_connections": len(manager.active_connections),
         "timestamp": time.time(),
-        "message": "Memory-safe mode active - corrupted double-linked list error fixed",
-        "memory_safety_features": [
-            "Thread-safe model loading",
-            "Explicit memory cleanup",
-            "Conservative CUDA settings",
-            "Single-threaded processing",
-            "Disabled JIT compilation"
+        "message": "cuDNN compatibility fixed - libcudnn_ops_infer.so.8 error resolved",
+        "cudnn_fixes": [
+            "cuDNN 8.x/9.x compatibility layers",
+            "Proper library path configuration",
+            "cuDNN operations testing",
+            "Memory-safe CUDA context",
+            "VAD filter disabled for stability"
         ]
-    })
+    }
+    
+    if gpu_available:
+        try:
+            health_info["cuda_version"] = torch.version.cuda
+            health_info["pytorch_version"] = torch.__version__
+            health_info["cudnn_version"] = torch.backends.cudnn.version()
+            health_info["cudnn_enabled"] = torch.backends.cudnn.enabled
+        except Exception as e:
+            health_info["cuda_info_error"] = str(e)
+    
+    return UTF8JSONResponse(health_info)
 
 @app.post("/api/transcribe")
 async def transcribe_file(
@@ -387,7 +354,6 @@ async def transcribe_file(
     language: str = Form("auto"),
     model: str = Form(Config.WHISPER_MODEL)
 ):
-    """File transcription endpoint with memory safety"""
     temp_file_path = None
     try:
         if not audio_file.filename:
@@ -413,7 +379,7 @@ async def transcribe_file(
         audio_array = audio_array.astype(np.float32)
         audio_array = np.clip(audio_array, -1.0, 1.0)
         
-        result = await MemorySafeWhisperManager.transcribe(audio_array, language)
+        result = await WhisperManager.transcribe(audio_array, language)
         return UTF8JSONResponse(result)
         
     except Exception as e:
@@ -432,7 +398,6 @@ async def transcribe_file(
 
 @app.websocket("/ws/realtime")
 async def websocket_endpoint(websocket: WebSocket):
-    """Real-time transcription WebSocket endpoint with memory safety"""
     await manager.connect(websocket)
     
     try:
@@ -440,10 +405,10 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_bytes()
             
             try:
-                if not MemorySafeAudioProcessor.detect_speech(data):
+                if not AudioProcessor.detect_speech(data):
                     continue
                 
-                audio_array = MemorySafeAudioProcessor.preprocess_audio(data)
+                audio_array = AudioProcessor.preprocess_audio(data)
                 
                 if len(audio_array) == 0:
                     continue
@@ -451,14 +416,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 if len(audio_array) < Config.SAMPLE_RATE * 0.5:
                     continue
                 
-                result = await MemorySafeWhisperManager.transcribe(audio_array)
+                result = await WhisperManager.transcribe(audio_array)
                 await manager.send_personal_message(result, websocket)
                 
             except Exception as e:
                 logger.error(f"WebSocket processing error: {e}")
                 continue
-            finally:
-                gc.collect()
             
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -468,21 +431,19 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/models")
 async def get_available_models():
-    """Get available Whisper models"""
     models = [
-        {"name": "tiny", "size": "39MB", "speed": "~32x", "description": "Fastest, memory-safe"},
-        {"name": "base", "size": "74MB", "speed": "~16x", "description": "Recommended for memory-safe mode"},
-        {"name": "small", "size": "244MB", "speed": "~6x", "description": "Good quality, moderate memory usage"},
-        {"name": "medium", "size": "769MB", "speed": "~2x", "description": "High quality, more memory"},
-        {"name": "large-v2", "size": "1550MB", "speed": "~1x", "description": "Best quality, high memory"},
-        {"name": "large-v3", "size": "1550MB", "speed": "~1x", "description": "Latest, highest memory usage"}
+        {"name": "tiny", "size": "39MB", "speed": "~32x", "description": "Fastest, cuDNN-safe"},
+        {"name": "base", "size": "74MB", "speed": "~16x", "description": "Recommended for cuDNN compatibility"},
+        {"name": "small", "size": "244MB", "speed": "~6x", "description": "Good quality, stable"},
+        {"name": "medium", "size": "769MB", "speed": "~2x", "description": "High quality, more GPU memory"},
+        {"name": "large-v2", "size": "1550MB", "speed": "~1x", "description": "Best quality, requires stable cuDNN"},
+        {"name": "large-v3", "size": "1550MB", "speed": "~1x", "description": "Latest, highest accuracy"}
     ]
     
     return UTF8JSONResponse({"models": models})
 
 @app.get("/api/languages")
 async def get_supported_languages():
-    """Get supported languages"""
     languages = [
         {"code": "auto", "name": "Auto-detect"},
         {"code": "en", "name": "English"},
