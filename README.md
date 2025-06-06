@@ -10,29 +10,30 @@
 
 OpenAI Whisper + CUDA 12.4 + Large-v3 model optimized Web application with streaming focus
 
-## ? ABI COMPATIBILITY ISSUE FIXED - [ABI_FIX_GUIDE.md](#abi-compatibility-fix)
+## MEMORY CORRUPTION ISSUE FIXED - [Memory Fix Guide](#memory-corruption-fix)
 
-**? ERROR RESOLVED: "OSError: undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev"**
+**ERROR RESOLVED: "corrupted double-linked list" container restart loop**
 
-### ? Instant Fix - One Command Solution
+### Instant Fix - One Command Solution
 ```bash
-# Clone and auto-fix ABI compatibility
+# Clone and auto-fix memory corruption issues
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
-chmod +x fix_abi_compatibility.sh
-./fix_abi_compatibility.sh
+chmod +x fix_memory_corruption.sh
+./fix_memory_corruption.sh
 
 # Access at http://localhost:8000
 ```
 
-### ? What Was Fixed in v2.2.2
-- **? ABI Compatibility**: Fixed PyTorch/torchaudio symbol incompatibility
-- **? Exact Version Matching**: PyTorch 2.4.1+cu124 and torchaudio 2.4.1+cu124
-- **? Dependency Cleanup**: Removed problematic CUDA packages causing conflicts
-- **? Build Verification**: Added comprehensive verification steps
-- **? Automatic Fix Script**: `fix_abi_compatibility.sh` for instant resolution
+### What Was Fixed in v2.2.2
+- **Memory Corruption**: Fixed "corrupted double-linked list" errors
+- **Thread Safety**: Complete thread-safe implementation with proper locking
+- **Memory Management**: Explicit cleanup and garbage collection
+- **JIT Disabling**: Complete Numba JIT compilation disabling for stability
+- **Conservative Settings**: Single-threaded processing with memory-safe parameters
+- **Automatic Fix Script**: `fix_memory_corruption.sh` for instant resolution
 
-## ? GPU Edition Available - [README_GPU.md](README_GPU.md)
+## GPU Edition Available - [README_GPU.md](README_GPU.md)
 
 **NEW: CUDA 12.4 + Large-v3 Model Support**
 - **Maximum Accuracy**: 97%+ accuracy with Large-v3 model
@@ -40,30 +41,31 @@ chmod +x fix_abi_compatibility.sh
 - **Real-time Factor < 0.3x**: Process audio 3x faster than real-time
 - **Enterprise Ready**: Production-grade GPU deployment
 
-[? **GPU Setup Guide**](README_GPU.md) | [? **ABI Fix Guide**](#abi-compatibility-fix) | [? **Quick Start**](fix_abi_compatibility.sh)
+[GPU Setup Guide](README_GPU.md) | [Memory Fix Guide](#memory-corruption-fix) | [Quick Start](#quick-start-options)
 
-## Latest Updates - v2.2.2 (2025-06-06) - ABI Compatibility Issue Completely Fixed
+## Latest Updates - v2.2.2 (2025-06-06) - Memory Corruption Issue Completely Fixed
 
-**? ABI COMPATIBILITY ERROR FULLY RESOLVED**
+**MEMORY CORRUPTION ERROR FULLY RESOLVED**
 
-### ? ABI Compatibility Fix
-- **Complete Solution**: All "undefined symbol" ABI errors resolved
-- **CUDA 12.4**: Optimized PyTorch 2.4.1+cu124 with exact torchaudio matching
-- **Symbol Verification**: Comprehensive ABI symbol availability checking
-- **Problem Packages Removed**: Eliminated conflicting CUDA packages
-- **Automatic Fix Script**: `fix_abi_compatibility.sh` provides one-command solution
+### Memory Corruption Fix
+- **Complete Solution**: All "corrupted double-linked list" errors resolved
+- **Thread Safety**: Comprehensive thread-safe implementation
+- **Memory Management**: Explicit cleanup and garbage collection
+- **JIT Compilation**: Complete disabling of problematic JIT compilation
+- **Conservative Processing**: Single-threaded, memory-safe configuration
+- **Automatic Fix Script**: `fix_memory_corruption.sh` provides one-command solution
 
-### ?? Fix Features
-- **Auto-Diagnosis**: PyTorch/torchaudio compatibility diagnostic
+### Fix Features
+- **Auto-Diagnosis**: Memory corruption diagnostic tools
 - **Container Cleanup**: Automatic removal of problematic containers/images
-- **Build Verification**: Validates ABI compatibility before deployment
+- **Safe Configuration**: Memory-safe Docker and environment configuration
 - **Health Testing**: Complete application functionality verification
 - **Error Recovery**: Automatic fallback options for failed builds
 
-### ? Universal Quick Start Options
+### Universal Quick Start Options
 ```bash
-# Option 1: ABI Compatibility Fix (Recommended for GPU)
-./fix_abi_compatibility.sh
+# Option 1: Memory Corruption Fix (Recommended for unstable systems)
+./fix_memory_corruption.sh
 
 # Option 2: Universal Setup (Auto-detects system)
 ./quick_start.sh
@@ -75,33 +77,33 @@ chmod +x fix_abi_compatibility.sh
 ./setup.sh
 ```
 
-### ? Compatibility Status
+### Stability Status
 | Issue | Status | Solution |
 |-------|--------|----------|
-| ? PyTorch ABI symbol errors | ? **FIXED** | Exact version matching (2.4.1+cu124) |
-| ? torchaudio undefined symbols | ? **FIXED** | Matching torchaudio 2.4.1+cu124 |
-| ? CUDA package conflicts | ? **FIXED** | Removed problematic dependencies |
-| ? Container startup failures | ? **FIXED** | Build verification and testing |
-| ? Docker compose errors | ? **FIXED** | Simplified GPU configuration |
+| "corrupted double-linked list" | **FIXED** | Thread-safe implementation |
+| Container restart loops | **FIXED** | Memory-safe configuration |
+| Memory leaks | **FIXED** | Explicit cleanup and GC |
+| JIT compilation conflicts | **FIXED** | Complete JIT disabling |
+| Threading issues | **FIXED** | Single-threaded processing |
 
 ---
 
 ## Quick Start Options
 
-### ? ABI Compatibility Fix (Recommended for GPU Systems)
+### Memory Corruption Fix (Recommended for Unstable Systems)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
 cd realtime-whisper-subtitles-optimized
 
-# Automatic ABI fix
-chmod +x fix_abi_compatibility.sh
-./fix_abi_compatibility.sh
+# Automatic memory corruption fix
+chmod +x fix_memory_corruption.sh
+./fix_memory_corruption.sh
 
 # Access at http://localhost:8000
 ```
 
-### ? Universal Quick Start (Auto-detects System)
+### Universal Quick Start (Auto-detects System)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -114,7 +116,7 @@ chmod +x quick_start.sh
 # Access at http://localhost:8000
 ```
 
-### ? GPU Edition (Maximum Performance)
+### GPU Edition (Maximum Performance)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -127,7 +129,7 @@ chmod +x setup_gpu.sh
 # Access at http://localhost:8000
 ```
 
-### ?? Standard Edition (CPU/Basic GPU)
+### Standard Edition (CPU/Basic GPU)
 ```bash
 # Clone repository
 git clone https://github.com/nullpox7/realtime-whisper-subtitles-optimized.git
@@ -146,82 +148,108 @@ docker-compose up -d
 
 ---
 
-## ABI Compatibility Fix
+## Memory Corruption Fix
 
-### ? Error Description
-**Error**: `OSError: /usr/local/lib/python3.11/dist-packages/torchaudio/lib/libtorchaudio.so: undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev`
+### Error Description
+**Error**: `corrupted double-linked list` followed by container restart loops
 
-**Cause**: ABI (Application Binary Interface) incompatibility between PyTorch and torchaudio versions.
+**Cause**: Memory corruption due to:
+- Threading conflicts in faster-whisper
+- Numba JIT compilation memory management issues
+- Unsafe memory allocation patterns
+- Multiple workers accessing shared memory
 
-### ? Automatic Fix (Recommended)
+### Automatic Fix (Recommended)
 ```bash
 # One-command fix
-./fix_abi_compatibility.sh
+./fix_memory_corruption.sh
 
 # Or with options
-./fix_abi_compatibility.sh --help
+./fix_memory_corruption.sh --help
 ```
 
-### ? Manual Diagnosis
+### Manual Diagnosis
 ```bash
-# Run diagnostic script
-python3 pytorch_diagnostic.py
+# Run memory diagnostic
+./diagnose_memory.sh
 
-# Check Docker container ABI
-docker run --rm --gpus all your-image python3 -c "import torch, torchaudio; print('OK')"
+# Check container memory usage
+docker stats
+
+# Monitor for memory corruption
+dmesg | grep -i "corrupt|segfault|killed"
 ```
 
-### ? Fix Options
+### Fix Options
 
 | Option | Command | Use Case |
 |--------|---------|----------|
-| **Full Fix** | `./fix_abi_compatibility.sh` | Complete automatic resolution |
-| **Clean Only** | `./fix_abi_compatibility.sh --clean-only` | Remove problematic containers |
-| **Test Only** | `./fix_abi_compatibility.sh --test-only` | Run diagnostics only |
-| **Build Only** | `./fix_abi_compatibility.sh --build-only` | Rebuild with fixed dependencies |
+| **Full Fix** | `./fix_memory_corruption.sh` | Complete automatic resolution |
+| **Diagnostic** | `./diagnose_memory.sh` | Memory corruption analysis |
+| **Safe Mode** | `docker-compose -f docker-compose.gpu.safe.yml up -d` | Memory-safe configuration |
+| **Clean Start** | `./fix_memory_corruption.sh --clean` | Remove all containers and rebuild |
 
-### ?? Manual Fix Steps
+### Memory-Safe Configuration
+The fix applies these memory-safe settings:
+
+```env
+# Memory safety critical settings
+NUMBA_DISABLE_JIT=1
+NUMBA_CACHE_DIR=/dev/null
+OMP_NUM_THREADS=1
+MKL_NUM_THREADS=1
+
+# Conservative processing
+BATCH_SIZE=1
+MAX_WORKERS=1
+BEAM_SIZE=1
+
+# Memory limits
+CUDA_MEMORY_FRACTION=0.5
+PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+```
+
+### Manual Fix Steps
 If automatic fix fails:
 
 ```bash
-# 1. Clean everything
+# 1. Stop all containers
 docker-compose -f docker-compose.gpu.yml down --volumes --remove-orphans
-docker system prune -af
 
-# 2. Rebuild with fixed dependencies
-docker-compose -f docker-compose.gpu.yml build --no-cache
+# 2. Use memory-safe configuration
+docker-compose -f docker-compose.gpu.safe.yml up -d
 
-# 3. Start services
-docker-compose -f docker-compose.gpu.yml up -d
-
-# 4. Verify
+# 3. Check memory-safe mode
 curl http://localhost:8000/health
+
+# 4. Monitor for stability
+docker logs -f realtime-whisper-subtitles-optimized-whisper-subtitles-safe-1
 ```
 
 ---
 
 ## Key Features
 
-### ? Streaming Optimized
+### Streaming Optimized
 - **Real-time Subtitles**: Live speech-to-text with minimal delay
 - **Microphone Selection**: Choose specific audio input device
 - **Fullscreen Mode**: Black background overlay perfect for OBS/streaming software
 - **No History**: Clean display showing only current speech (no scrolling)
 - **Keyboard Controls**: Space to start/stop, F for fullscreen, C to clear
 
-### ? Performance
+### Performance
 - **GPU Acceleration** with Real-Time Factor < 0.3x (GPU Edition)
 - **WebSocket-based** real-time transcription
 - **Energy-based Speech Detection** (reliable and fast)
 - **Optimized Models**: From tiny (fastest) to large-v3 (best quality)
 
-### ? AI Capabilities
+### AI Capabilities
 - **OpenAI Whisper** models (tiny to large-v3)
 - **faster-whisper** optimization
 - **Auto Language Detection** + 99+ languages
 - **Word-level Timestamps** with confidence scores
 
-### ? Modern Interface
+### Modern Interface
 - **Stream-focused UI**: Minimal, clean design
 - **Collapsible Statistics**: Hide/show performance metrics
 - **Responsive Design**: Works on desktop and mobile
@@ -262,17 +290,17 @@ curl http://localhost:8000/health
 
 ## Troubleshooting
 
-### ? ABI Compatibility Errors (RESOLVED)
+### Memory Corruption Errors (RESOLVED)
 
-**Error**: "undefined symbol: _ZNK5torch8autograd4Node4nameB5cxx11Ev"
+**Error**: "corrupted double-linked list"
 
-**Solution**: Use the automatic ABI fix script
+**Solution**: Use the automatic memory corruption fix script
 ```bash
 # Instant fix
-./fix_abi_compatibility.sh
+./fix_memory_corruption.sh
 
 # Or run diagnostic first
-python3 pytorch_diagnostic.py
+./diagnose_memory.sh
 ```
 
 ### Quick Health Check
@@ -283,6 +311,7 @@ curl http://localhost:8000/health
 # Should return:
 {
   "status": "healthy",
+  "mode": "memory_safe",
   "model_loaded": true,
   "gpu_available": true/false,
   "version": "2.2.2"
@@ -293,18 +322,20 @@ curl http://localhost:8000/health
 
 | Issue | Solution |
 |-------|----------|
-| ? **ABI compatibility errors** | **Use `./fix_abi_compatibility.sh`** |
-| ? GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
-| ? Model loading slow | Use smaller model (base/small) or check VRAM |
-| ?? High latency | Reduce batch size or use faster model |
-| ? Audio not working | Check microphone permissions in browser |
-| ? Build failures | Run `./fix_abi_compatibility.sh` for automatic resolution |
+| **Memory corruption errors** | **Use `./fix_memory_corruption.sh`** |
+| Container restart loops | Run memory-safe mode with diagnostic |
+| GPU not detected | Check `nvidia-smi` and NVIDIA Container Toolkit |
+| Model loading slow | Use smaller model (base/small) or check VRAM |
+| High latency | Reduce batch size or use faster model |
+| Audio not working | Check microphone permissions in browser |
+| Build failures | Run `./fix_memory_corruption.sh` for automatic resolution |
 
 ### Available Docker Configurations
 
 | Configuration | File | Best For |
 |---------------|------|----------|
-| **Fixed GPU** | `docker-compose.gpu.yml` | High-performance GPU systems (recommended) |
+| **Memory Safe** | `docker-compose.gpu.safe.yml` | Systems with memory corruption issues |
+| **Fixed GPU** | `docker-compose.gpu.yml` | High-performance GPU systems |
 | Standard | `docker-compose.yml` | General use, auto GPU/CPU detection |
 | CPU Only | `docker-compose.cpu.yml` | CPU-only systems |
 | Production | `docker-compose.prod.yml` | Production deployment |
@@ -322,18 +353,20 @@ curl http://localhost:8000/health
 - **auto**: Auto-detect language (recommended)
 - **Specific**: Choose if you know the primary language
 
-### GPU Configuration (GPU Edition)
+### Memory-Safe Configuration
 ```env
-# Maximum accuracy configuration
-WHISPER_MODEL=large-v3
-LANGUAGE=auto
-DEVICE=cuda
-COMPUTE_TYPE=float16
+# Memory safety (for unstable systems)
+NUMBA_DISABLE_JIT=1
+BATCH_SIZE=1
+MAX_WORKERS=1
+BEAM_SIZE=1
+CUDA_MEMORY_FRACTION=0.5
 
-# Performance optimization
+# Performance (for stable systems)
+WHISPER_MODEL=large-v3
+BATCH_SIZE=16
+MAX_WORKERS=4
 BEAM_SIZE=5
-BEST_OF=5
-TEMPERATURE=0.0
 CUDA_MEMORY_FRACTION=0.85
 ```
 
@@ -357,7 +390,7 @@ curl http://localhost:8000/api/models
 ## Streaming Setup Guide
 
 ### For OBS Studio
-1. Start the application: `./fix_abi_compatibility.sh` or `./quick_start.sh`
+1. Start the application: `./fix_memory_corruption.sh` or `./quick_start.sh`
 2. Open http://localhost:8000
 3. Select your microphone device
 4. Choose language and model (large-v3 for best quality)
@@ -418,9 +451,9 @@ curl http://localhost:8000/api/models
 
 ### Example Streaming Setups:
 1. **High-end Gaming Stream**: GPU Edition + large-v3 model + auto-detect
-2. **Standard Gaming Stream**: Standard Edition + base model + specific language
+2. **Standard Gaming Stream**: Memory-safe mode + base model + specific language
 3. **Podcast Recording**: GPU Edition + large-v3 + visible statistics
-4. **Virtual Meeting**: Standard Edition + small model + collapsible stats
+4. **Virtual Meeting**: Memory-safe mode + small model + collapsible stats
 
 ## Documentation
 
@@ -457,9 +490,9 @@ This project is licensed under the [MIT License](LICENSE).
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: General questions and community help
 
-### For ABI Compatibility Errors
-1. **First Try**: Run `./fix_abi_compatibility.sh`
-2. **If Still Failing**: Run `python3 pytorch_diagnostic.py` for detailed analysis
+### For Memory Corruption Errors
+1. **First Try**: Run `./fix_memory_corruption.sh`
+2. **If Still Failing**: Run `./diagnose_memory.sh` for detailed analysis
 3. **Need Help**: Create issue with diagnostic output
 
 ### Professional Support
@@ -472,7 +505,7 @@ For enterprise deployments and custom integrations, contact us through GitHub Is
 - **Color Customization**: Custom text and background colors
 - **Position Controls**: Adjust subtitle position on screen
 - **Transparency**: Adjustable background transparency
-- **Advanced GPU Features**: Multi-GPU load balancing
+- **Advanced Memory Management**: Dynamic memory optimization
 
 ### v2.4.0 (Future)
 - **Multiple Language Support**: Real-time language switching
@@ -490,8 +523,8 @@ For enterprise deployments and custom integrations, contact us through GitHub Is
 
 **Perfect for streamers, content creators, and accessibility-focused applications. Get real-time, accurate subtitles with minimal setup!**
 
-**? Having ABI compatibility errors? The automatic fix script `./fix_abi_compatibility.sh` resolves all symbol issues instantly!**
+**Having memory corruption errors? The automatic fix script `./fix_memory_corruption.sh` resolves all stability issues instantly!**
 
-**? Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.4 + Large-v3 model!**
+**Want maximum accuracy? Try the [GPU Edition](README_GPU.md) with CUDA 12.4 + Large-v3 model!**
 
-**? Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
+**Clean repository? Use our [Cleanup Guide](CLEANUP.md) to remove unnecessary files!**
