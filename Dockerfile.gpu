@@ -1,9 +1,9 @@
-# Real-time Whisper Subtitles - GPU Dockerfile (CUDA 12.8 Latest)
-# CUDA 12.8 + PyTorch 2.7.0 + CuDNN 9 configuration - latest compatibility matrix
+# Real-time Whisper Subtitles - GPU Dockerfile (ABI Fixed v2.2.2)
+# PyTorch/torchaudio ABI??????????
 # Author: Real-time Whisper Subtitles Team
 # Encoding: UTF-8
 
-FROM nvidia/cuda:12.8-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -19,7 +19,7 @@ ENV NUMBA_CACHE_DIR=/dev/null
 ENV NUMBA_THREADING_LAYER=workqueue
 ENV NUMBA_PARALLEL=0
 
-# CUDA 12.8 optimization settings
+# CUDA 12.4 optimization settings
 ENV CUDA_VISIBLE_DEVICES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -31,7 +31,7 @@ ENV MALLOC_TRIM_THRESHOLD_=131072
 ENV MALLOC_MMAP_THRESHOLD_=131072
 ENV MALLOC_MMAP_MAX_=65536
 
-# PyTorch CUDA 12.8 settings
+# PyTorch CUDA settings
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 ENV CUDA_MEMORY_FRACTION=0.85
 ENV CUDA_MODULE_LOADING=LAZY
@@ -100,13 +100,23 @@ WORKDIR /app
 COPY requirements.gpu.txt .
 
 # Upgrade pip and install wheel
-RUN python3.11 -m pip install --upgrade pip setuptools wheel
+RUN python3.11 -m pip install --upgrade pip==24.2 setuptools==72.1.0 wheel==0.44.0
 
-# Install PyTorch 2.7.0 with CUDA 12.8 support (latest compatibility)
-RUN python3.11 -m pip install torch==2.7.0+cu128 torchaudio==2.7.0+cu128 --index-url https://download.pytorch.org/whl/cu128
+# CRITICAL: Install PyTorch and torchaudio with exact matching versions
+# This ensures ABI compatibility between PyTorch and torchaudio
+RUN python3.11 -m pip install --no-cache-dir \
+    torch==2.4.1+cu124 \
+    torchaudio==2.4.1+cu124 \
+    --index-url https://download.pytorch.org/whl/cu124
 
-# Install other Python dependencies (latest compatible versions)
+# Verify PyTorch installation before proceeding
+RUN python3.11 -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA Available: {torch.cuda.is_available()}')"
+
+# Install other Python dependencies AFTER PyTorch verification
 RUN python3.11 -m pip install --no-cache-dir -r requirements.gpu.txt
+
+# Final verification of torchaudio
+RUN python3.11 -c "import torchaudio; print(f'torchaudio: {torchaudio.__version__}')"
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data/{models,outputs,logs,cache} \
@@ -144,6 +154,9 @@ RUN mkdir -p /app/data/{models/whisper,outputs,logs,cache} \
     && mkdir -p /home/appuser/.cache/torch \
     && mkdir -p /home/appuser/.cache/huggingface
 
+# Final verification as appuser
+RUN python3.11 -c "import torch, torchaudio; print(f'? PyTorch: {torch.__version__}'); print(f'? torchaudio: {torchaudio.__version__}'); print(f'? CUDA: {torch.cuda.is_available()}')"
+
 # Expose port
 EXPOSE 8000
 
@@ -151,7 +164,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=60s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Set default environment variables optimized for CUDA 12.8 and large models
+# Set default environment variables optimized for CUDA 12.4 and large models
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WHISPER_MODEL=large-v3
