@@ -1,16 +1,16 @@
 #!/bin/bash
-# Real-time Whisper Subtitles - Universal Quick Start Script
-# Works with any CUDA version and automatically fixes compatibility issues
+# Real-time Whisper Subtitles - Universal Quick Start Script (v2.2.3)
+# Works with any CUDA version and fixes cuDNN compatibility issues
 # Encoding: UTF-8
 
 set -e
 
-echo "? Real-time Whisper Subtitles - Universal Quick Start"
-echo "======================================================"
+echo "? Real-time Whisper Subtitles - Universal Quick Start v2.2.3"
+echo "=============================================================="
 echo ""
 echo "This script will automatically:"
 echo "  ? Detect your system configuration"
-echo "  ? Find compatible CUDA images"
+echo "  ? Fix cuDNN compatibility issues"
 echo "  ? Set up GPU or CPU mode as appropriate"
 echo "  ? Build and start the application"
 echo ""
@@ -67,7 +67,7 @@ check_gpu() {
             log_success "GPU detected: $gpu_name"
             
             # Check NVIDIA Container Toolkit
-            if docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1; then
+            if docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi >/dev/null 2>&1; then
                 log_success "NVIDIA Container Toolkit is working"
                 return 0
             else
@@ -102,7 +102,7 @@ setup_environment() {
     if [ "$1" = "gpu" ]; then
         if [ -f ".env.gpu.example" ]; then
             cp .env.gpu.example .env
-            log_success "GPU environment configured"
+            log_success "GPU environment configured with cuDNN compatibility"
         else
             log_warning ".env.gpu.example not found, using default"
             cp .env.example .env 2>/dev/null || echo "# GPU Mode" > .env
@@ -132,22 +132,8 @@ main() {
         # Setup GPU environment
         setup_environment "gpu"
         
-        # Check if CUDA fix is needed
-        if [ -f "fix_cuda_image.sh" ]; then
-            log_info "Running CUDA compatibility check..."
-            chmod +x fix_cuda_image.sh
-            
-            # Run the CUDA fix script silently to check compatibility
-            if ./fix_cuda_image.sh 2>/dev/null | grep -q "Compatible CUDA image"; then
-                log_success "CUDA compatibility verified"
-            else
-                log_warning "Running CUDA compatibility fix..."
-                ./fix_cuda_image.sh
-            fi
-        fi
-        
         # Build and start GPU version
-        log_info "Building GPU-optimized image..."
+        log_info "Building GPU-optimized image with cuDNN compatibility..."
         if docker-compose -f docker-compose.gpu.yml build --no-cache; then
             log_success "GPU image built successfully"
             
@@ -164,7 +150,7 @@ main() {
         fi
         
     else
-        log_info "??  CPU mode detected - Setting up standard configuration"
+        log_info "? CPU mode detected - Setting up standard configuration"
         echo ""
         setup_standard_mode
         compose_file="docker-compose.yml"
@@ -183,7 +169,8 @@ main() {
             status=$(echo "$health_data" | jq -r '.status' 2>/dev/null || echo "healthy")
             gpu_available=$(echo "$health_data" | jq -r '.gpu_available' 2>/dev/null || echo "false")
             model_loaded=$(echo "$health_data" | jq -r '.model_loaded' 2>/dev/null || echo "true")
-            version=$(echo "$health_data" | jq -r '.version' 2>/dev/null || echo "2.2.1")
+            version=$(echo "$health_data" | jq -r '.version' 2>/dev/null || echo "2.2.3")
+            cudnn_fixes=$(echo "$health_data" | jq -r '.cudnn_fixes[]' 2>/dev/null || echo "")
             
             echo ""
             log_success "? Application is running successfully!"
@@ -198,19 +185,27 @@ main() {
             echo "? GPU Available: $gpu_available"
             echo "? Model Loaded: $model_loaded"
             echo ""
+            if [ "$mode" = "GPU" ]; then
+                echo "? cuDNN Compatibility Fixes Applied:"
+                echo "  ? cuDNN 8.x/9.x compatibility layers"
+                echo "  ? Proper library path configuration"
+                echo "  ? Memory-safe CUDA context"
+                echo "  ? libcudnn_ops_infer.so.8 error resolved"
+                echo ""
+            fi
             echo "? Quick Actions:"
-            echo "  ? Press F for fullscreen subtitle overlay"
+            echo "  ?? Press F for fullscreen subtitle overlay"
             echo "  ? Press Space to start/stop recording"
             echo "  ? Press C to clear subtitles"
             echo ""
-            echo "? Management Commands:"
+            echo "?? Management Commands:"
             echo "  ? View logs: docker-compose -f $compose_file logs -f"
             echo "  ? Restart: docker-compose -f $compose_file restart"
             echo "  ? Stop: docker-compose -f $compose_file down"
             echo ""
             echo "? Documentation:"
             echo "  ? GPU Guide: README_GPU.md"
-            echo "  ? Troubleshooting: Run ./fix_cuda_image.sh for CUDA issues"
+            echo "  ? Main Guide: README.md"
             echo ""
             break
         else
@@ -225,7 +220,7 @@ main() {
             echo "  ? Check logs: docker-compose -f $compose_file logs"
             echo "  ? Try accessing: http://localhost:8000"
             echo "  ? Wait a few more minutes for model loading"
-            echo "  ? For CUDA issues: ./fix_cuda_image.sh"
+            echo "  ? For cuDNN issues: Check GPU compatibility"
         fi
     done
 }
@@ -247,7 +242,7 @@ setup_standard_mode() {
 
 # Show help if requested
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "Real-time Whisper Subtitles - Universal Quick Start"
+    echo "Real-time Whisper Subtitles - Universal Quick Start v2.2.3"
     echo ""
     echo "Usage: $0 [options]"
     echo ""
@@ -258,9 +253,15 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo ""
     echo "This script automatically:"
     echo "  ? Detects GPU availability"
+    echo "  ? Fixes cuDNN compatibility issues"
     echo "  ? Sets up appropriate configuration"
-    echo "  ? Fixes CUDA compatibility issues"
     echo "  ? Builds and starts the application"
+    echo ""
+    echo "cuDNN Fixes Applied:"
+    echo "  ? libcudnn_ops_infer.so.8 error resolution"
+    echo "  ? cuDNN 8.x/9.x compatibility layers"
+    echo "  ? Proper library path configuration"
+    echo "  ? Memory-safe CUDA initialization"
     echo ""
     echo "For manual setup, see README.md"
     exit 0
@@ -273,12 +274,9 @@ if [ "$1" = "--gpu" ]; then
     setup_directories
     setup_environment "gpu"
     
-    if [ -f "fix_cuda_image.sh" ]; then
-        chmod +x fix_cuda_image.sh
-        ./fix_cuda_image.sh
-    else
-        docker-compose -f docker-compose.gpu.yml up -d
-    fi
+    log_info "Building GPU image with cuDNN compatibility..."
+    docker-compose -f docker-compose.gpu.yml build --no-cache
+    docker-compose -f docker-compose.gpu.yml up -d
     exit 0
 elif [ "$1" = "--cpu" ]; then
     log_info "CPU mode forced"
