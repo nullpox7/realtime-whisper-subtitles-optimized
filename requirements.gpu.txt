@@ -1,108 +1,75 @@
-# Real-time Whisper Subtitles - GPU Optimized Dependencies (v2.3.0)
-# CUDA 12.8 + PyTorch 2.7.0 + CuDNN 9 optimized for large-v3 model maximum accuracy
+# Real-time Whisper Subtitles - GPU Dependencies (Fixed ABI v2.2.2)
+# PyTorch/torchaudio ABI????????
 # Encoding: UTF-8
 
-# Web Framework (essential - latest compatible versions)
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
-websockets==13.1
+# Web Framework (essential)
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+websockets==12.0
 jinja2==3.1.4
-python-multipart==0.0.12
+python-multipart==0.0.9
 
-# PyTorch with CUDA 12.8 support (installed separately in Dockerfile)
-# torch==2.7.0+cu128 --index-url https://download.pytorch.org/whl/cu128
-# torchaudio==2.7.0+cu128 --index-url https://download.pytorch.org/whl/cu128
+# PyTorch with CUDA 12.4 - ABI??? (??????????)
+# ??????????Dockerfile??????????????
+# torch==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+# torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124
 
-# Core AI/ML (GPU optimized versions for PyTorch 2.7)
-faster-whisper==1.1.0
-transformers==4.48.0
-accelerate==1.2.0
+# Core AI/ML (GPU optimized versions - ABI??????)
+faster-whisper==1.0.3
+transformers==4.44.2
+accelerate==0.34.0
 
-# Audio Processing (high-quality, compatible)
+# Audio Processing (???????)
 librosa==0.10.2
 soundfile==0.12.1
 
-# Scientific Computing - GPU optimized and stable versions
-numpy>=1.24.0,<2.1.0
-scipy==1.14.1
-
-# CUDA optimization libraries for CUDA 12.8
-cupy-cuda12x==13.3.0
+# Scientific Computing - ABI???
+numpy==1.26.4
+scipy==1.13.1
 
 # Redis client for caching and performance
-redis==5.2.1
-aioredis==2.0.1
+redis==5.0.7
 
 # System utilities
-psutil==6.1.0
+psutil==6.0.0
 python-dotenv==1.0.1
 requests==2.32.3
 aiofiles==24.1.0
 
 # Production server
-gunicorn==23.0.0
+gunicorn==22.0.0
 
 # Monitoring and metrics
-prometheus-client==0.21.1
+prometheus-client==0.20.0
 
 # Essential utilities
-tqdm==4.67.1
-packaging==24.2
+tqdm==4.66.4
+packaging==24.1
 
 # Async HTTP client
-httpx==0.28.1
+httpx==0.27.0
 
-# Logging utilities (FIXED VERSION)
-structlog==25.4.0
+# Logging utilities
+structlog==24.2.0
 
 # Date/time handling
 python-dateutil==2.9.0
 
 # Configuration management
-pyyaml==6.0.2
+pyyaml==6.0.1
 
 # Memory optimization
 pympler==0.9
 
-# Additional ML/Audio dependencies optimized for GPU
+# Additional ML/Audio dependencies (minimal set for ABI compatibility)
 resampy==0.4.3
 audioread==3.0.1
-pooch>=1.8.2
-joblib>=1.4.2
-threadpoolctl>=3.2.0
-
-# Audio feature extraction (latest compatible versions)
-pyworld==0.3.4
-pysptk==1.0.1
-
-# Advanced audio processing (stable version)
-noisereduce==3.0.2
-
-# Additional performance libraries
-orjson==3.10.12
-msgpack==1.1.0
-
-# Development and debugging (optional)
-ipython==8.30.0
-jupyter==1.1.1
+pooch==1.8.2
+joblib==1.4.2
+threadpoolctl==3.5.0
 
 # Model downloading and caching
-huggingface-hub==0.27.0
+huggingface-hub==0.24.5
 
-# CUDA 12.8 specific optimizations with CuDNN 9 support
-nvidia-cudnn-cu12==9.5.1.17
-nvidia-cufft-cu12==11.3.0.4
-nvidia-curand-cu12==10.3.7.77
-nvidia-cusolver-cu12==11.7.1.2
-nvidia-cusparse-cu12==12.4.1.7
-nvidia-nccl-cu12==2.23.4
-
-# Triton for GPU kernel optimization (latest version for PyTorch 2.7)
-triton==3.3.0
-
-# Additional CUDA utilities
-pynvml==11.5.3
-
-# Additional dependencies for improved performance
-safetensors==0.4.5
-tokenizers==0.21.0
+# Additional performance libraries (lightweight)
+orjson==3.10.6
